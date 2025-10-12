@@ -2,8 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>极光预警观测直播</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>极光预警观测系统</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   
@@ -12,20 +12,17 @@
       theme: {
         extend: {
           colors: {
-            aurora: {
-              blue: '#4096ff',
-              green: '#52c41a',
-              orange: '#fa8c16',
-              red: '#f5222d',
-              purple: '#722ed1',
-              pink: '#ff4d4f',
-              dark: '#141414'
-            }
+            'aurora-green': '#00ffcc',
+            'aurora-red': '#ff3366',
+            'aurora-orange': '#ff9933',
+            'aurora-blue': '#33ccff',
+            'aurora-purple': '#9966ff'
           },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-          },
-        },
+          animation: {
+            'high-pulse': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'medium-pulse': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+          }
+        }
       }
     }
   </script>
@@ -33,208 +30,165 @@
   <style type="text/tailwindcss">
     @layer utilities {
       .text-shadow {
-        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
       }
       .text-shadow-heavy {
-        text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.7);
-      }
-      .bg-blur {
-        backdrop-filter: blur(6px);
+        text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
       }
       .glass-effect {
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
       }
-      .live-pulse {
-        animation: pulse 4s infinite;
+      .region-high {
+        box-shadow: 0 0 15px rgba(255, 51, 102, 0.8);
       }
-      .warning-pulse {
-        animation: warning 4s infinite;
+      .region-warning {
+        box-shadow: 0 0 15px rgba(255, 153, 51, 0.8);
       }
-     
-      @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.6; }
-        100% { opacity: 1; }
+      .live-badge {
+        top: 4px;
+        right: 4px;
+        animation: blink 1.5s infinite;
       }
-      @keyframes warning {
-        0% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.7; transform: scale(1.05); }
-        100% { opacity: 1; transform: scale(1); }
-      }
-      @keyframes medium {
-        0% { opacity: 1; }
-        50% { opacity: 0.6; }
-        100% { opacity: 1; }
-      }
-      @keyframes high {
+      @keyframes blink {
         0% { opacity: 1; }
         50% { opacity: 0.4; }
         100% { opacity: 1; }
       }
-      @keyframes region {
-        0% { box-shadow: 0 0 5px rgba(250, 140, 22, 0); }
-        50% { box-shadow: 0 0 15px rgba(250, 140, 22, 0.8); }
-        100% { box-shadow: 0 0 5px rgba(250, 140, 22, 0); }
-      }
-      @keyframes region-high {
-        0% { box-shadow: 0 0 5px rgba(245, 34, 45, 0); }
-        50% { box-shadow: 0 0 20px rgba(245, 34, 45, 0.9); }
-        100% { box-shadow: 0 0 5px rgba(245, 34, 45, 0); }
-      }
     }
   </style>
 </head>
-<body class="bg-transparent overflow-hidden">
-  <!-- 改为移动端友好的垂直布局 -->
-  <div class="min-h-screen bg-gradient-to-br from-gray-900 to-blue-900 p-4">
+
+<body class="bg-transparent min-h-screen">
+  <div class="min-h-[100vh] bg-gradient-to-br from-gray-900 to-blue-900 p-4 overflow-auto">
+    <!-- 页面头部 -->
+    <div class="text-center mb-6">
+      <h1 class="text-white text-2xl font-bold mb-2 text-shadow">极光预警观测系统</h1>
+      <div id="datetime" class="text-gray-300 text-sm"></div>
+      <div id="live-location" class="text-aurora-green mt-1"></div>
+    </div>
     
-    <!-- 顶部信息栏 -->
-    <div class="glass-effect rounded-2xl p-4 mb-4">
-      <div class="flex items-center justify-between">
-        <!-- Logo和时间 -->
-        <div class="flex items-center">
-          <div class="w-12 h-12 bg-gradient-to-r from-aurora-blue to-aurora-purple rounded-full flex items-center justify-center mr-3">
-            <i class="fa fa-bolt text-white text-lg"></i>
-          </div>
-          <div>
-            <div class="text-white font-bold text-shadow">极光预警观测</div>
-            <div id="datetime" class="text-white text-sm text-shadow-heavy">2025/09/30 12:34:56</div>
-          </div>
-        </div>
-        
-        <!-- 直播状态和KP指数 -->
-        <div class="flex items-center space-x-2">
-          <span class="inline-flex items-center justify-center w-8 h-8 bg-aurora-pink rounded-full live-pulse">
-            <i class="fa fa-circle text-[8px] text-white"></i>
-          </span>
-          <div id="kp-display" class="text-aurora-orange font-bold text-shadow">KP: --</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 预警条幅 -->
-    <div id="warning-text" class="glass-effect rounded-xl p-3 mb-4 text-center warning-pulse">
-      <div class="text-white text-base font-bold text-shadow-heavy">
-        极光活动预警：当前观测区域可能出现极光现象
-      </div>
-    </div>
-
-    <!-- 核心预报信息 -->
-    <div class="glass-effect rounded-2xl p-4 mb-4">
+    <!-- 预警信息区域 -->
+    <div class="mb-6 p-4 glass-effect rounded-xl">
+      <div id="forecast-title" class="font-bold text-lg text-center mb-2"></div>
       <div class="flex items-center justify-center mb-3">
-        <i class="fa fa-bolt text-aurora-green mr-2" id="wind-speed-icon"></i>
-        <span id="forecast-title" class="font-bold text-white text-lg text-shadow">30分钟后极光预报</span>
+        <i id="wind-speed-icon" class="fa fa-bolt mr-2"></i>
+        <span id="kp-display" class="text-white text-xl font-bold"></span>
       </div>
+      <div id="warning-text" class="text-base font-bold text-center"></div>
       
-      <!-- 实时数据指标 -->
-      <div class="grid grid-cols-3 gap-3 mb-4">
-        <div class="text-center">
-          <div class="text-aurora-blue text-sm">太阳风速</div>
-          <div id="solar-wind" class="text-white font-bold">-- km/s</div>
+      <!-- 太阳活动数据 -->
+      <div class="grid grid-cols-3 gap-2 mt-4 text-sm">
+        <div class="text-center p-2 glass-effect rounded-lg">
+          <div class="text-gray-400">太阳风速</div>
+          <div id="solar-wind" class="text-aurora-green"></div>
         </div>
-        <div class="text-center">
-          <div class="text-aurora-green text-sm">HPI强度</div>
-          <div id="hpi-power" class="text-white font-bold">--</div>
+        <div class="text-center p-2 glass-effect rounded-lg">
+          <div class="text-gray-400">HPI强度</div>
+          <div id="hpi-power" class="text-aurora-blue"></div>
         </div>
-        <div class="text-center">
-          <div class="text-aurora-purple text-sm">Bz方向</div>
-          <div id="bz-direction" class="text-white font-bold">-- nT</div>
+        <div class="text-center p-2 glass-effect rounded-lg">
+          <div class="text-gray-400">磁场方向</div>
+          <div id="bz-direction" class="text-aurora-purple"></div>
         </div>
       </div>
     </div>
 
-    <!-- 城市预报网格布局 -->
-    <div class="mb-4">
-      <div class="flex items-center justify-between mb-3">
-        <div class="text-white font-bold text-shadow-heavy">观测地点预报</div>
-        <div class="text-white text-sm text-shadow-heavy">
-          <i class="fa fa-map-marker text-aurora-pink mr-1"></i>
-          <span id="live-location">俄罗斯·北纬53°</span>
+    <!-- 新增：极光实时画面区域 -->
+    <div class="mb-6 relative rounded-xl overflow-hidden">
+      <div class="absolute live-badge bg-aurora-red text-white text-xs px-2 py-0.5 rounded-full z-10">
+        <i class="fa fa-circle mr-1"></i>实时画面
+      </div>
+      <img 
+        src="https://pics.starvisor.net/galleries/orig/cap_bag.jpg" 
+        alt="当前极光实时画面" 
+        class="w-full h-auto rounded-xl object-cover shadow-lg"
+      >
+      <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+        <p class="text-white text-sm">极光实时观测画面 | 每5分钟自动更新</p>
+      </div>
+    </div>
+    
+    <!-- 城市列表容器 -->
+    <div class="grid grid-cols-2 gap-3 mb-6">
+      <!-- 城市1：北极村 -->
+      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-arctic">
+        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">北极村</div>
+        <div class="text-white text-sm">
+          <span class="text-aurora-green" id="arctic-prob">概率: 85%</span><br>
+          <span id="arctic-cloud">云量: 10%</span><br>
+          <span id="arctic-temp">温度: -13°C</span>
         </div>
       </div>
       
-      <div class="grid grid-cols-2 gap-3">
-        <!-- 城市1 -->
-        <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-arctic">
-          <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">北极村</div>
-          <div class="text-white text-sm">
-            <span class="text-aurora-green" id="arctic-prob">概率: 85%</span><br>
-            <span id="arctic-cloud">云量: 10%</span><br>
-            <span id="arctic-temp">温度: -8°C</span>
-          </div>
+      <!-- 城市2：满归镇 -->
+      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-mangui">
+        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">满归镇</div>
+        <div class="text-white text-sm">
+          <span class="text-aurora-green" id="mangui-prob">概率: 70%</span><br>
+          <span id="mangui-cloud">云量: 15%</span><br>
+          <span id="mangui-temp">温度: -10°C</span>
         </div>
-        
-        <!-- 城市2 -->
-        <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-mangui">
-          <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">满归镇</div>
-          <div class="text-white text-sm">
-            <span class="text-aurora-green" id="mangui-prob">概率: 70%</span><br>
-            <span id="mangui-cloud">云量: 15%</span><br>
-            <span id="mangui-temp">温度: -10°C</span>
-          </div>
+      </div>
+      
+      <!-- 城市3：根河市 -->
+      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-genhe">
+        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">根河市</div>
+        <div class="text-white text-sm">
+          <span class="text-aurora-green" id="genhe-prob">概率: 78%</span><br>
+          <span id="genhe-cloud">云量: 12%</span><br>
+          <span id="genhe-temp">温度: -11°C</span>
         </div>
-        
-        <!-- 城市3 -->
-        <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-genhe">
-          <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">根河市</div>
-          <div class="text-white text-sm">
-            <span class="text-aurora-green" id="genhe-prob">概率: 78%</span><br>
-            <span id="genhe-cloud">云量: 12%</span><br>
-            <span id="genhe-temp">温度: -11°C</span>
-          </div>
+      </div>
+      
+      <!-- 城市4：额尔古纳 -->
+      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-eerguna">
+        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">额尔古纳</div>
+        <div class="text-white text-sm">
+          <span class="text-aurora-green" id="eerguna-prob">概率: 90%</span><br>
+          <span id="eerguna-cloud">云量: 5%</span><br>
+          <span id="eerguna-temp">温度: -15°C</span>
         </div>
-        
-        <!-- 城市4 -->
-        <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-eerguna">
-          <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">额尔古纳</div>
-          <div class="text-white text-sm">
-            <span class="text-aurora-green" id="eerguna-prob">概率: 90%</span><br>
-            <span id="eerguna-cloud">云量: 5%</span><br>
-            <span id="eerguna-temp">温度: -15°C</span>
-          </div>
+      </div>
+      
+      <!-- 城市5：黑河市 -->
+      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-heihe">
+        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">黑河市</div>
+        <div class="text-white text-sm">
+          <span class="text-aurora-green" id="heihe-prob">概率: 65%</span><br>
+          <span id="heihe-cloud">云量: 20%</span><br>
+          <span id="heihe-temp">温度: -5°C</span>
         </div>
-        
-        <!-- 城市5 -->
-        <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-heihe">
-          <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">黑河市</div>
-          <div class="text-white text-sm">
-            <span class="text-aurora-green" id="heihe-prob">概率: 65%</span><br>
-            <span id="heihe-cloud">云量: 20%</span><br>
-            <span id="heihe-temp">温度: -5°C</span>
-          </div>
+      </div>
+      
+      <!-- 城市6：禾木村 -->
+      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-hegu">
+        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">禾木村</div>
+        <div class="text-white text-sm">
+          <span class="text-aurora-green" id="hegu-prob">概率: 80%</span><br>
+          <span id="hegu-cloud">云量: 12%</span><br>
+          <span id="hegu-temp">温度: -12°C</span>
         </div>
-        
-        <!-- 城市6 -->
-        <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-hegu">
-          <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">禾木村</div>
-          <div class="text-white text-sm">
-            <span class="text-aurora-green" id="hegu-prob">概率: 80%</span><br>
-            <span id="hegu-cloud">云量: 12%</span><br>
-            <span id="hegu-temp">温度: -12°C</span>
-          </div>
+      </div>
+      
+      <!-- 城市7：海拉尔 -->
+      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-hailar">
+        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">海拉尔</div>
+        <div class="text-white text-sm">
+          <span class="text-aurora-green" id="hailar-prob">概率: 75%</span><br>
+          <span id="hailar-cloud">云量: 18%</span><br>
+          <span id="hailar-temp">温度: -18°C</span>
         </div>
-        
-        <!-- 城市7 -->
-        <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-hailar">
-          <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">海拉尔</div>
-          <div class="text-white text-sm">
-            <span class="text-aurora-green" id="hailar-prob">概率: 75%</span><br>
-            <span id="hailar-cloud">云量: 18%</span><br>
-            <span id="hailar-temp">温度: -18°C</span>
-          </div>
-        </div>
-        
-        <!-- 城市8 -->
-        <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-zalantun">
-          <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">扎兰屯</div>
-          <div class="text-white text-sm">
-            <span class="text-aurora-green" id="zalantun-prob">概率: 88%</span><br>
-            <span id="zalantun-cloud">云量: 8%</span><br>
-            <span id="zalantun-temp">温度: -20°C</span>
-          </div>
+      </div>
+      
+      <!-- 城市8：扎兰屯 -->
+      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-zalantun">
+        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">扎兰屯</div>
+        <div class="text-white text-sm">
+          <span class="text-aurora-green" id="zalantun-prob">概率: 88%</span><br>
+          <span id="zalantun-cloud">云量: 8%</span><br>
+          <span id="zalantun-temp">温度: -20°C</span>
         </div>
       </div>
     </div>
@@ -287,7 +241,9 @@
     },
     
     auroraRefresh: 2 * 60 * 1000,
-    weatherRefresh: 10 * 60 * 1000
+    weatherRefresh: 10 * 60 * 1000,
+    // 新增：实时画面刷新间隔（5分钟）
+    imageRefresh: 5 * 60 * 1000
   };
 
   // 数据状态
@@ -314,6 +270,8 @@
     solarWind: document.getElementById('solar-wind'),
     hpiPower: document.getElementById('hpi-power'),
     bzDirection: document.getElementById('bz-direction'),
+    // 新增：实时画面元素
+    liveImage: document.querySelector('img[alt="当前极光实时画面"]'),
     cities: {
       arctic: {
         container: document.getElementById('city-arctic'),
@@ -411,7 +369,7 @@
     }
   }
 
-  // ===================== 核心功能 - 混淆的核心算法 ===================== 
+  // ===================== 核心功能 ===================== 
   function _0x9fd0() {
     const _0xaf01 = new Date();
     const _0xbf12 = _0xaf01.getFullYear();
@@ -577,7 +535,24 @@
     if (_0x3e4f.lastUpdate) _0x3e4f.lastUpdate.textContent = _0x2c3d.lastUpdate;
   }
 
-  // ===================== API调用函数（保持清晰，避免混淆） ===================== 
+  // 新增：实时画面刷新功能
+  function refreshLiveImage() {
+    if (_0x3e4f.liveImage) {
+      // 添加时间戳防止缓存
+      const timestamp = new Date().getTime();
+      const originalSrc = "https://pics.starvisor.net/galleries/orig/cap_bag.jpg";
+      _0x3e4f.liveImage.src = `${originalSrc}?t=${timestamp}`;
+      
+      // 更新画面底部的时间提示
+      const updateTime = new Date().toLocaleTimeString();
+      const infoBar = _0x3e4f.liveImage.nextElementSibling;
+      if (infoBar) {
+        infoBar.innerHTML = `<p class="text-white text-sm">极光实时观测画面 | 最近更新: ${updateTime}</p>`;
+      }
+    }
+  }
+
+  // ===================== API调用函数 ===================== 
   async function fetchAuroraData() {
     try {
       // 获取KP指数
@@ -699,10 +674,14 @@
     
     fetchAuroraData();
     fetchWeather();
+    // 初始化实时画面
+    refreshLiveImage();
     
     setInterval(fetchAuroraData, _0x1a2b.auroraRefresh);
     setInterval(fetchWeather, _0x1a2b.weatherRefresh);
     setInterval(_0x9fd0, 1000);
+    // 定时刷新实时画面（5分钟）
+    setInterval(refreshLiveImage, _0x1a2b.imageRefresh);
     
     console.log("极光观测直播系统已启动");
   }
