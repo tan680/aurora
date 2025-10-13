@@ -2,8 +2,9 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>艾探索极光观测系统</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>艾探索-极光预报</title>
+  <meta name="description" content="极 光 实 时 预 报">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   
@@ -12,15 +13,15 @@
       theme: {
         extend: {
           colors: {
-            'aurora-green': '#00ffcc',
-            'aurora-red': '#ff3366',
-            'aurora-orange': '#ff9933',
-            'aurora-blue': '#33ccff',
-            'aurora-purple': '#9966ff'
-          },
-          animation: {
-            'high-pulse': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            'medium-pulse': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            aurora: {
+              blue: '#4096ff',
+              green: '#52c41a',
+              orange: '#fa8c16',
+              red: '#f5222d',
+              purple: '#722ed1',
+              pink: '#ff4d4f',
+              dark: '#141414'
+            }
           }
         }
       }
@@ -30,681 +31,1018 @@
   <style type="text/tailwindcss">
     @layer utilities {
       .text-shadow {
-        text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
       }
       .text-shadow-heavy {
-        text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+        text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.7);
       }
       .glass-effect {
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+      .live-pulse {
+        animation: pulse 4s infinite;
+      }
+      .warning-pulse {
+        animation: warning 4s infinite;
       }
       .region-high {
-        box-shadow: 0 0 15px rgba(255, 51, 102, 0.8);
+        animation: region-high 3s infinite;
       }
       .region-warning {
-        box-shadow: 0 0 15px rgba(255, 153, 51, 0.8);
+        animation: region 3s infinite;
       }
-      .live-badge {
-        top: 4px;
-        right: 4px;
-        animation: blink 1.5s infinite;
+      .breathing {
+        animation: breathing 3s infinite;
       }
-      @keyframes blink {
+     
+      @keyframes pulse {
         0% { opacity: 1; }
-        50% { opacity: 0.4; }
+        50% { opacity: 0.6; }
         100% { opacity: 1; }
       }
-      /* 禁止图片保存相关样式 */
-      .no-save {
-        pointer-events: none;
-        user-select: none;
+      @keyframes warning {
+        0% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(1.05); }
+        100% { opacity: 1; transform: scale(1); }
+      }
+      @keyframes region {
+        0% { box-shadow: 0 0 5px rgba(250, 140, 22, 0); }
+        50% { box-shadow: 0 0 15px rgba(250, 140, 22, 0.8); }
+        100% { box-shadow: 0 0 5px rgba(250, 140, 22, 0); }
+      }
+      @keyframes region-high {
+        0% { box-shadow: 0 0 5px rgba(245, 34, 45, 0); }
+        50% { box-shadow: 0 0 20px rgba(245, 34, 45, 0.9); }
+        100% { box-shadow: 0 0 5px rgba(245, 34, 45, 0); }
+      }
+      @keyframes breathing {
+        0% { opacity: 0.3; }
+        50% { opacity: 1; }
+        100% { opacity: 0.3; }
       }
     }
   </style>
 </head>
+<body class="bg-transparent overflow-x-hidden">
+  <div class="min-h-screen bg-gradient-to-br from-gray-900 to-blue-900 p-4">
 
-<body class="bg-transparent min-h-screen">
-  <div class="min-h-[100vh] bg-gradient-to-br from-gray-900 to-blue-900 p-4 overflow-auto">
-    <!-- 顶部区域：系统名称 + 实时画面 -->
-    <div class="mb-6">
-      <!-- 系统名称 -->
-      <div class="text-left mb-3">
-        <h1 class="text-white text-2xl font-bold text-shadow">艾探索极光观测系统</h1>
-        <div class="flex items-center mt-1">
-          <div id="datetime" class="text-gray-300 text-sm mr-4"></div>
-          <div id="live-location" class="text-aurora-green text-sm"></div>
+    <div class="glass-effect rounded-2xl p-4 mb-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <div class="w-12 h-12 bg-gradient-to-r from-aurora-blue to-aurora-purple rounded-full flex items-center justify-center mr-3">
+            <i class="fa fa-bolt text-white text-lg"></i>
+          </div>
+          <div>
+            <div class="text-white font-bold text-shadow">艾探索-极光预报</div>
+            <div id="datetime" class="text-white text-sm text-shadow-heavy">2025/09/30 12:34:56</div>
+          </div>
         </div>
-      </div>
-      
-      <!-- 极光实时画面区域（左上方） -->
-      <div class="relative rounded-xl overflow-hidden mb-6 shadow-lg">
-        <div class="absolute live-badge bg-aurora-red text-white text-xs px-2 py-0.5 rounded-full z-10">
-          <i class="fa fa-circle mr-1"></i>实时画面
-        </div>
-        <!-- 添加禁止保存相关属性 -->
-        <img 
-          src="https://pics.starvisor.net/galleries/orig/cap_bag.jpg" 
-          alt="艾探索极光实时观测画面" 
-          class="w-full h-auto rounded-xl object-cover no-save"
-          oncontextmenu="return false;"  <!-- 禁止右键菜单 -->
-          ondragstart="return false;"    <!-- 禁止拖拽 -->
-        >
-        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-          <p class="text-white text-xs" id="image-update-time">极光实时观测画面 | 每5分钟自动更新</p>
+        
+        <div class="flex items-center space-x-2">
+          <span class="inline-flex items-center justify-center w-8 h-8 bg-aurora-pink rounded-full live-pulse">
+            <i class="fa fa-circle text-[8px] text-white"></i>
+          </span>
+          <div id="kp-display" class="text-aurora-orange font-bold text-shadow">KP: --</div>
         </div>
       </div>
     </div>
-    
-    <!-- 预警信息区域 -->
-    <div class="mb-6 p-4 glass-effect rounded-xl">
-      <div id="forecast-title" class="font-bold text-lg text-center mb-2"></div>
+
+    <div id="warning-text" class="glass-effect rounded-xl p-3 mb-4 text-center warning-pulse">
+      <div class="text-white text-base font-bold text-shadow-heavy">
+        正在连接数据源...
+      </div>
+    </div>
+
+    <div class="glass-effect rounded-2xl p-4 mb-4">
       <div class="flex items-center justify-center mb-3">
-        <i id="wind-speed-icon" class="fa fa-bolt mr-2"></i>
-        <span id="kp-display" class="text-white text-xl font-bold"></span>
+        <i class="fa fa-bolt text-aurora-green mr-2" id="wind-speed-icon"></i>
+        <span id="forecast-title" class="font-bold text-white text-lg text-shadow">初始化中...</span>
       </div>
-      <div id="warning-text" class="text-base font-bold text-center"></div>
-      
-      <!-- 太阳活动数据 -->
-      <div class="grid grid-cols-3 gap-2 mt-4 text-sm">
-        <div class="text-center p-2 glass-effect rounded-lg">
-          <div class="text-gray-400">太阳风速</div>
-          <div id="solar-wind" class="text-aurora-green"></div>
+
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        <div class="text-center">
+          <div class="text-aurora-blue text-sm">太阳风速</div>
+          <div id="solar-wind" class="text-white font-bold">-- km/s</div>
         </div>
-        <div class="text-center p-2 glass-effect rounded-lg">
-          <div class="text-gray-400">HPI强度</div>
-          <div id="hpi-power" class="text-aurora-blue"></div>
+        <div class="text-center">
+          <div class="text-aurora-green text-sm">HPI强度</div>
+          <div id="hpi-power" class="text-white font-bold">--</div>
         </div>
-        <div class="text-center p-2 glass-effect rounded-lg">
-          <div class="text-gray-400">磁场方向</div>
-          <div id="bz-direction" class="text-aurora-purple"></div>
+        <div class="text-center">
+          <div class="text-aurora-purple text-sm">Bz方向</div>
+          <div id="bz-direction" class="text-white font-bold">-- nT</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-xs text-gray-300">
+        <div>数据状态: <span id="data-status">连接中...</span></div>
+        <div>更新时间: <span id="last-update">--</span></div>
+      </div>
+    </div>
+
+    <div class="glass-effect rounded-2xl p-4 mb-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-white font-bold text-shadow-heavy">实时监控画面</div>
+        <div class="flex items-center">
+          <div class="w-3 h-3 bg-aurora-green rounded-full breathing mr-2"></div>
+          <div class="text-white text-xs" id="live-location">俄罗斯·北纬53°</div>
+        </div>
+      </div>
+      <div class="relative bg-black rounded-xl overflow-hidden">
+        <div id="live-camera" class="aspect-video bg-cover bg-center bg-no-repeat flex items-center justify-center" style="background-image: url('https://pics.starvisor.net/galleries/orig/cap_bag.jpg')">
+          <div id="camera-placeholder" class="absolute inset-0 bg-gradient-to-br from-purple-900 to-blue-800 flex items-center justify-center">
+            <div class="text-center text-white">
+              <i class="fa fa-video-camera text-4xl mb-2 opacity-50"></i>
+              <div class="text-sm">极光实时监控画面</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    
-    <!-- 城市列表容器 -->
-    <div class="grid grid-cols-2 gap-3 mb-6">
-      <!-- 城市1：北极村 -->
-      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-arctic">
-        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">北极村</div>
-        <div class="text-white text-sm">
-          <span class="text-aurora-green" id="arctic-prob">概率: 85%</span><br>
-          <span id="arctic-cloud">云量: 10%</span><br>
-          <span id="arctic-temp">温度: -13°C</span>
-        </div>
+    <div class="mb-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-white font-bold text-shadow-heavy">观测地点预报</div>
       </div>
       
-      <!-- 城市2：满归镇 -->
-      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-mangui">
-        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">满归镇</div>
-        <div class="text-white text-sm">
-          <span class="text-aurora-green" id="mangui-prob">概率: 70%</span><br>
-          <span id="mangui-cloud">云量: 15%</span><br>
-          <span id="mangui-temp">温度: -10°C</span>
+      <div class="space-y-4">
+        <div class="region-container glass-effect rounded-2xl overflow-hidden" id="city-arctic">
+          <div class="p-4">
+            <div class="flex justify-between items-center mb-3">
+              <div class="text-white text-xl font-bold text-shadow-heavy">北极村</div>
+              <div id="arctic-prob" class="text-aurora-green text-xl font-bold">概率: --%</div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-white text-sm">
+              <div id="arctic-cloud">云量: --%</div>
+              <div id="arctic-temp">温度: --°C</div>
+            </div>
+          </div>
+          <div id="arctic-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
+            <div class="text-white text-sm font-bold mb-1">拍摄参数:</div>
+            <div class="text-white text-xs" id="arctic-params">等待数据...</div>
+          </div>
         </div>
-      </div>
-      
-      <!-- 城市3：根河市 -->
-      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-genhe">
-        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">根河市</div>
-        <div class="text-white text-sm">
-          <span class="text-aurora-green" id="genhe-prob">概率: 78%</span><br>
-          <span id="genhe-cloud">云量: 12%</span><br>
-          <span id="genhe-temp">温度: -11°C</span>
+
+        <div class="region-container glass-effect rounded-2xl overflow-hidden" id="city-mangui">
+          <div class="p-4">
+            <div class="flex justify-between items-center mb-3">
+              <div class="text-white text-xl font-bold text-shadow-heavy">满归镇</div>
+              <div id="mangui-prob" class="text-aurora-green text-xl font-bold">概率: --%</div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-white text-sm">
+              <div id="mangui-cloud">云量: --%</div>
+              <div id="mangui-temp">温度: --°C</div>
+            </div>
+          </div
+          <div id="mangui-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
+            <div class="text-white text-sm font-bold mb-1">拍摄参数:</div>
+            <div class="text-white text-xs" id="mangui-params">等待数据...</div>
+          </div>
         </div>
-      </div>
-      
-      <!-- 城市4：额尔古纳 -->
-      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-eerguna">
-        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">额尔古纳</div>
-        <div class="text-white text-sm">
-          <span class="text-aurora-green" id="eerguna-prob">概率: 90%</span><br>
-          <span id="eerguna-cloud">云量: 5%</span><br>
-          <span id="eerguna-temp">温度: -15°C</span>
+
+        <div class="region-container glass-effect rounded-2xl overflow-hidden" id="city-genhe">
+          <div class="p-4">
+            <div class="flex justify-between items-center mb-3">
+              <div class="text-white text-xl font-bold text-shadow-heavy">根河市</div>
+              <div id="genhe-prob" class="text-aurora-green text-xl font-bold">概率: --%</div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-white text-sm">
+              <div id="genhe-cloud">云量: --%</div>
+              <div id="genhe-temp">温度: --°C</div>
+            </div>
+          </div>
+          <div id="genhe-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
+            <div class="text-white text-sm font-bold mb-1">拍摄参数:</div>
+            <div class="text-white text-xs" id="genhe-params">等待数据...</div>
+          </div>
         </div>
-      </div>
-      
-      <!-- 城市5：黑河市 -->
-      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-heihe">
-        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">黑河市</div>
-        <div class="text-white text-sm">
-          <span class="text-aurora-green" id="heihe-prob">概率: 65%</span><br>
-          <span id="heihe-cloud">云量: 20%</span><br>
-          <span id="heihe-temp">温度: -5°C</span>
+
+        <div class="region-container glass-effect rounded-2xl overflow-hidden" id="city-eerguna">
+          <div class="p-4">
+            <div class="flex justify-between items-center mb-3">
+              <div class="text-white text-xl font-bold text-shadow-heavy">额尔古纳</div>
+              <div id="eerguna-prob" class="text-aurora-green text-xl font-bold">概率: --%</div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-white text-sm">
+              <div id="eerguna-cloud">云量: --%</div>
+              <div id="eerguna-temp">温度: --°C</div>
+            </div>
+          </div>
+          <div id="eerguna-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
+            <div class="text-white text-sm font-bold mb-1">拍摄参数:</div>
+            <div class="text-white text-xs" id="eerguna-params">等待数据...</div>
+          </div>
         </div>
-      </div>
-      
-      <!-- 城市6：禾木村 -->
-      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-hegu">
-        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">禾木村</div>
-        <div class="text-white text-sm">
-          <span class="text-aurora-green" id="hegu-prob">概率: 80%</span><br>
-          <span id="hegu-cloud">云量: 12%</span><br>
-          <span id="hegu-temp">温度: -12°C</span>
+
+        <div class="region-container glass-effect rounded-2xl overflow-hidden" id="city-heihe">
+          <div class="p-4">
+            <div class="flex justify-between items-center mb-3">
+              <div class="text-white text-xl font-bold text-shadow-heavy">黑河市</div>
+              <div id="heihe-prob" class="text-aurora-green text-xl font-bold">概率: --%</div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-white text-sm">
+              <div id="heihe-cloud">云量: --%</div>
+              <div id="heihe-temp">温度: --°C</div>
+            </div>
+          </div>
+          <div id="heihe-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
+            <div class="text-white text-sm font-bold mb-1">拍摄参数:</div>
+            <div class="text-white text-xs" id="heihe-params">等待数据...</div>
+          </div>
         </div>
-      </div>
-      
-      <!-- 城市7：海拉尔 -->
-      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-hailar">
-        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">海拉尔</div>
-        <div class="text-white text-sm">
-          <span class="text-aurora-green" id="hailar-prob">概率: 75%</span><br>
-          <span id="hailar-cloud">云量: 18%</span><br>
-          <span id="hailar-temp">温度: -18°C</span>
+
+        <div class="region-container glass-effect rounded-2xl overflow-hidden" id="city-hegu">
+          <div class="p-4">
+            <div class="flex justify-between items-center mb-3">
+              <div class="text-white text-xl font-bold text-shadow-heavy">禾木村</div>
+              <div id="hegu-prob" class="text-aurora-green text-xl font-bold">概率: --%</div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-white text-sm">
+              <div id="hegu-cloud">云量: --%</div>
+              <div id="hegu-temp">温度: --°C</div>
+            </div>
+          </div>
+          <div id="hegu-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
+            <div class="text-white text-sm font-bold mb-1">拍摄参数:</div>
+            <div class="text-white text-xs" id="hegu-params">等待数据...</div>
+          </div>
         </div>
-      </div>
-      
-      <!-- 城市8：扎兰屯 -->
-      <div class="text-center region-container glass-effect p-3 rounded-xl" id="city-zalantun">
-        <div class="text-white text-base font-semibold mb-1 text-shadow-heavy">扎兰屯</div>
-        <div class="text-white text-sm">
-          <span class="text-aurora-green" id="zalantun-prob">概率: 88%</span><br>
-          <span id="zalantun-cloud">云量: 8%</span><br>
-          <span id="zalantun-temp">温度: -20°C</span>
+
+        <div class="region-container glass-effect rounded-2xl overflow-hidden" id="city-hailar">
+          <div class="p-4">
+            <div class="flex justify-between items-center mb-3">
+              <div class="text-white text-xl font-bold text-shadow-heavy">海拉尔</div>
+              <div id="hailar-prob" class="text-aurora-green text-xl font-bold">概率: --%</div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-white text-sm">
+              <div id="hailar-cloud">云量: --%</div>
+              <div id="hailar-temp">温度: --°C</div>
+            </div>
+          </div>
+          <div id="hailar-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
+            <div class="text-white text-sm font-bold mb-1">拍摄参数:</div>
+            <div class="text-white text-xs" id="hailar-params">等待数据...</div>
+          </div>
+        </div>
+
+        <div class="region-container glass-effect rounded-2xl overflow-hidden" id="city-zalantun">
+          <div class="p-4">
+            <div class="flex justify-between items-center mb-3">
+              <div class="text-white text-xl font-bold text-shadow-heavy">扎兰屯</div>
+              <div id="zalantun-prob" class="text-aurora-green text-xl font-bold">概率: --%</div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-white text-sm">
+              <div id="zalantun-cloud">云量: --%</div>
+              <div id="zalantun-temp">温度: --°C</div>
+            </div>
+          </div>
+          <div id="zalantun-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
+            <div class="text-white text-sm font-bold mb-1">拍摄参数:</div>
+            <div class="text-white text-xs" id="zalantun-params">等待数据...</div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 底部信息 -->
     <div class="text-center text-gray-400 text-xs mt-4 pb-4">
-      <div>数据更新于 <span id="last-update">--</span></div>
-      <div>艾探索极光观测系统 © 2025</div>
+      <div>公众号:极光预报-小红书：艾探索追极光 © 2025</div>
     </div>
   </div>
 
   <script>
-  // 禁止图片保存的额外保护
-  document.addEventListener('contextmenu', function(e) {
-    // 阻止右键菜单（针对图片和整体页面）
-    if (e.target.tagName === 'IMG') {
-      e.preventDefault();
-      return false;
-    }
-  });
 
-  // 配置区域
-  const _0x1a2b = {
-    anchorLocation: {
-      name: "中国北部地区",
-      lat: 53.5,
-      lon: 122.3,
-      timezone: "Asia/Shanghai"
-    },
+(function() {
+    'use strict';
     
-    locations: {
-      arctic: { name: "北极村", lat: 53.5, lon: 122.3, factor: 1.25 },
-      heihe: { name: "黑河市", lat: 50.2, lon: 127.5, factor: 1.18 },
-      mangui: { name: "满归镇", lat: 52.0, lon: 122.0, factor: 1.15 },
-      genhe: { name: "根河市", lat: 50.8, lon: 121.5, factor: 1.15 },
-      eerguna: { name: "额尔古纳", lat: 50.2, lon: 120.2, factor: 1.08 },
-      hegu: { name: "禾木村", lat: 48.5, lon: 87.4, factor: 0.85 },
-      hailar: { name: "海拉尔", lat: 49.2, lon: 119.7, factor: 1.05 },
-      zalantun: { name: "扎兰屯", lat: 48.0, lon: 122.7, factor: 0.90 }
-    },
-    
-    thresholds: {
-      probability: {
-        low: 30,
-        medium: 66
-      },
-      cloudCover: {
-        low: 30,
-        medium: 70
-      },
-      temperature: {
-        cold: -20,
-        medium: -10
-      },
-      windSpeed: {
-        medium: 500,
-        high: 600
-      }
-    },
-    
-    auroraRefresh: 2 * 60 * 1000,
-    weatherRefresh: 10 * 60 * 1000,
-    imageRefresh: 5 * 60 * 1000
-  };
-
-  // 数据状态
-  const _0x2c3d = {
-    kpIndex: "--",
-    forecastTime: "--",
-    globalProb: 0,
-    lastUpdate: null,
-    hpiPower: 0,
-    bzDirection: 0,
-    solarWind: 0,
-    solarDensity: 0
-  };
-
-  // DOM元素缓存
-  const _0x3e4f = {
-    forecastTitle: document.getElementById('forecast-title'),
-    datetime: document.getElementById('datetime'),
-    liveLocation: document.getElementById('live-location'),
-    warningText: document.getElementById('warning-text'),
-    windSpeedIcon: document.getElementById('wind-speed-icon'),
-    kpDisplay: document.getElementById('kp-display'),
-    lastUpdate: document.getElementById('last-update'),
-    solarWind: document.getElementById('solar-wind'),
-    hpiPower: document.getElementById('hpi-power'),
-    bzDirection: document.getElementById('bz-direction'),
-    liveImage: document.querySelector('img[alt="艾探索极光实时观测画面"]'),
-    imageUpdateTime: document.getElementById('image-update-time'),
-    cities: {
-      arctic: {
-        container: document.getElementById('city-arctic'),
-        prob: document.getElementById('arctic-prob'),
-        cloud: document.getElementById('arctic-cloud'),
-        temp: document.getElementById('arctic-temp')
-      },
-      mangui: {
-        container: document.getElementById('city-mangui'),
-        prob: document.getElementById('mangui-prob'),
-        cloud: document.getElementById('mangui-cloud'),
-        temp: document.getElementById('mangui-temp')
-      },
-      genhe: {
-        container: document.getElementById('city-genhe'),
-        prob: document.getElementById('genhe-prob'),
-        cloud: document.getElementById('genhe-cloud'),
-        temp: document.getElementById('genhe-temp')
-      },
-      eerguna: {
-        container: document.getElementById('city-eerguna'),
-        prob: document.getElementById('eerguna-prob'),
-        cloud: document.getElementById('eerguna-cloud'),
-        temp: document.getElementById('eerguna-temp')
-      },
-      heihe: {
-        container: document.getElementById('city-heihe'),
-        prob: document.getElementById('heihe-prob'),
-        cloud: document.getElementById('heihe-cloud'),
-        temp: document.getElementById('heihe-temp')
-      },
-      hegu: {
-        container: document.getElementById('city-hegu'),
-        prob: document.getElementById('hegu-prob'),
-        cloud: document.getElementById('hegu-cloud'),
-        temp: document.getElementById('hegu-temp')
-      },
-      hailar: {
-        container: document.getElementById('city-hailar'),
-        prob: document.getElementById('hailar-prob'),
-        cloud: document.getElementById('hailar-cloud'),
-        temp: document.getElementById('hailar-temp')
-      },
-      zalantun: {
-        container: document.getElementById('city-zalantun'),
-        prob: document.getElementById('zalantun-prob'),
-        cloud: document.getElementById('zalantun-cloud'),
-        temp: document.getElementById('zalantun-temp')
-      }
-    }
-  };
-
-  // 工具函数
-  function _0x4a5b(_0x5c6d) {
-    if (_0x5c6d) _0x5c6d.className = '';
-  }
-  
-  function _0x5b7c(_0x6d8e) {
-    if (_0x6d8e >= _0x1a2b.thresholds.probability.medium) {
-      return 'text-aurora-red high-pulse';
-    } else if (_0x6d8e >= _0x1a2b.thresholds.probability.low) {
-      return 'text-aurora-orange medium-pulse';
-    } else {
-      return 'text-gray-400';
-    }
-  }
-  
-  function _0x6c9d(_0x7eaf) {
-    if (_0x7eaf >= _0x1a2b.thresholds.cloudCover.medium) {
-      return 'text-aurora-red';
-    } else if (_0x7eaf >= _0x1a2b.thresholds.cloudCover.low) {
-      return 'text-aurora-orange';
-    } else {
-      return 'text-aurora-green';
-    }
-  }
-  
-  function _0x7dae(_0x8fbf) {
-    if (_0x8fbf <= _0x1a2b.thresholds.temperature.cold) {
-      return 'text-aurora-blue';
-    } else if (_0x8fbf <= _0x1a2b.thresholds.temperature.medium) {
-      return 'text-aurora-purple';
-    } else {
-      return 'text-white';
-    }
-  }
-  
-  function _0x8ebf(_0x9fcg) {
-    if (_0x9fcg >= _0x1a2b.thresholds.windSpeed.high) {
-      return 'text-aurora-red high-pulse';
-    } else if (_0x9fcg >= _0x1a2b.thresholds.windSpeed.medium) {
-      return 'text-aurora-orange medium-pulse';
-    } else {
-      return 'text-aurora-green';
-    }
-  }
-
-  // 核心功能
-  function _0x9fd0() {
-    const _0xaf01 = new Date();
-    const _0xbf12 = _0xaf01.getFullYear();
-    const _0xcf23 = String(_0xaf01.getMonth() + 1).padStart(2, '0');
-    const _0xdf34 = String(_0xaf01.getDate()).padStart(2, '0');
-    const _0xef45 = String(_0xaf01.getHours()).padStart(2, '0');
-    const _0xff56 = String(_0xaf01.getMinutes()).padStart(2, '0');
-    const _0x0f67 = String(_0xaf01.getSeconds()).padStart(2, '0');
-    
-    const _0x1f78 = `${_0xbf12}/${_0xcf23}/${_0xdf34}`;
-    const _0x2f89 = `${_0xef45}:${_0xff56}:${_0x0f67}`;
-    
-    _0x3e4f.datetime.innerHTML = `${_0x1f78} ${_0x2f89}`;
-  }
-
-  function _0x3f9a(_0x4aab, _0x5bbc, _0x6ccd, _0x7dde, _0x8eef, _0x9ff0) {
-    let _0xaf01 = 0;
-    const _0xbf12 = 30;
-    
-    if (_0x4aab >= 90) _0xaf01 += 35;
-    else if (_0x4aab >= 70) _0xaf01 += 25;
-    else if (_0x4aab >= 50) _0xaf01 += 15;
-
-    if (_0x6ccd < -15) _0xaf01 += 30;
-    else if (_0x6ccd < -10) _0xaf01 += 20;
-    else if (_0x6ccd < -5) _0xaf01 += 10;
-
-    if (_0x7dde >= 750) _0xaf01 += 20;
-    else if (_0x7dde >= 600) _0xaf01 += 15;
-    else if (_0x7dde >= 500) _0xaf01 += 10;
-    else if (_0x7dde >= 400) _0xaf01 += 5;
-
-    _0xaf01 += Math.min(5, _0x8eef);
-
-    if (_0xbf12 >= 30) _0xaf01 += 10;
-    else if (_0xbf12 >= 20) _0xaf01 += 7;
-    else if (_0xbf12 >= 10) _0xaf01 += 3;
-
-    _0xaf01 *= _0x9ff0;
-
-    return Math.min(95, Math.max(5, _0xaf01));
-  }
-
-  function _0x4fab() {
-    if (_0x2c3d.kpIndex === "--") return;
-    
-    for (const [_0x5cbc, _0x6dcd] of Object.entries(_0x1a2b.locations)) {
-      const _0x7ede = _0x3f9a(
-        _0x2c3d.hpiPower || 0,
-        30,
-        _0x2c3d.bzDirection || 0,
-        _0x2c3d.solarWind || 0,
-        _0x2c3d.solarDensity || 0,
-        _0x6dcd.factor
-      );
-      
-      const _0x8fef = _0x3e4f.cities[_0x5cbc];
-      if (!_0x8fef || !_0x8fef.prob) continue;
-      
-      const _0x9ff0 = _0x7ede < _0x1a2b.thresholds.probability.low 
-        ? "概率: 低" 
-        : `概率: ${Math.round(_0x7ede)}%`;
-      
-      _0x8fef.prob.textContent = _0x9ff0;
-      _0x4a5b(_0x8fef.prob);
-      _0x8fef.prob.className = `text-sm font-medium ${_0x5b7c(_0x7ede)} text-shadow-heavy`;
-      
-      _0x4a5b(_0x8fef.container);
-      _0x8fef.container.className = 'text-center region-container glass-effect p-3 rounded-xl';
-      if (_0x7ede >= _0x1a2b.thresholds.probability.medium) {
-        _0x8fef.container.classList.add('region-high');
-      } else if (_0x7ede >= _0x1a2b.thresholds.probability.low) {
-        _0x8fef.container.classList.add('region-warning');
-      }
-    }
-    
-    let _0xaf01 = 0;
-    let _0xbf12 = 0;
-    for (const [_0x5cbc, _0x6dcd] of Object.entries(_0x1a2b.locations)) {
-      const _0x7ede = _0x3f9a(
-        _0x2c3d.hpiPower || 0,
-        30,
-        _0x2c3d.bzDirection || 0,
-        _0x2c3d.solarWind || 0,
-        _0x2c3d.solarDensity || 0,
-        _0x6dcd.factor
-      );
-      _0xaf01 += _0x7ede;
-      _0xbf12++;
-    }
-    _0x2c3d.globalProb = Math.round(_0xaf01 / _0xbf12);
-    
-    _0x3e4f.kpDisplay.textContent = `KP: ${_0x2c3d.kpIndex}`;
-    
-    _0x6cbd();
-    
-    if (_0x2c3d.forecastTime !== "--") {
-      _0x3e4f.forecastTitle.textContent = `${_0x2c3d.forecastTime}分钟后极光预报`;
-      
-      _0x4a5b(_0x3e4f.forecastTitle);
-      _0x3e4f.forecastTitle.className = `font-bold text-lg ${_0x8ebf(_0x2c3d.solarWind)} text-shadow`;
-      
-      _0x4a5b(_0x3e4f.windSpeedIcon);
-      _0x3e4f.windSpeedIcon.className = `fa fa-bolt mr-2 ${_0x8ebf(_0x2c3d.solarWind)}`;
-    }
-  }
-
-  function _0x6cbd() {
-    let _0x7dce = "";
-    let _0x8edf = "text-white";
-    
-    if (_0x2c3d.globalProb >= _0x1a2b.thresholds.probability.medium) {
-      _0x7dce = `🔥 极光强预警：综合概率${_0x2c3d.globalProb}%，光污染等级≤2级地区（黑暗夜空）肉眼可观测，建议前往开阔无遮挡区域`;
-      _0x8edf = "text-aurora-red";
-    } else if (_0x2c3d.globalProb >= _0x1a2b.thresholds.probability.low) {
-      _0x7dce = `⚠️ 极光预警：综合概率${_0x2c3d.globalProb}%，手机或相机具备拍摄可能性；建议在**光污染等级≤2级**（暗空环境）区域，选择开阔无遮挡点位尝试拍摄，可优先搭配三脚架提升画质`;
-      _0x8edf = "text-aurora-orange";
-    } else {
-      _0x7dce = "当前无极光预警信息";
-      _0x8edf = "text-gray-300";
-    }
-    
-    _0x3e4f.warningText.textContent = _0x7dce;
-    
-    _0x4a5b(_0x3e4f.warningText);
-    if (_0x2c3d.globalProb >= _0x1a2b.thresholds.probability.medium) {
-      _0x3e4f.warningText.className = `${_0x8edf} text-base font-bold text-center high-pulse text-shadow-heavy`;
-    } else if (_0x2c3d.globalProb >= _0x1a2b.thresholds.probability.low) {
-      _0x3e4f.warningText.className = `${_0x8edf} text-base font-bold text-center medium-pulse text-shadow-heavy`;
-    } else {
-      _0x3e4f.warningText.className = `${_0x8edf} text-base font-bold text-center text-shadow-heavy`;
-    }
-  }
-
-  function _0x7dce() {
-    for (const [_0x8edf, _0x9ff0] of Object.entries(_0x3e4f.cities)) {
-      if (_0x9ff0.cloud) {
-        const _0xaf01 = _0x9ff0.cloud.textContent;
-        const _0xbf12 = parseInt(_0xaf01.match(/\d+/)[0]);
-        _0x4a5b(_0x9ff0.cloud);
-        _0x9ff0.cloud.className = `text-sm font-medium ${_0x6c9d(_0xbf12)} text-shadow-heavy`;
-      }
-      
-      if (_0x9ff0.temp) {
-        const _0xaf01 = _0x9ff0.temp.textContent;
-        const _0xbf12 = parseInt(_0xaf01.match(/-?\d+/)[0]);
-        _0x4a5b(_0x9ff0.temp);
-        _0x9ff0.temp.className = `text-sm font-medium ${_0x7dae(_0xbf12)} text-shadow-heavy`;
-      }
-    }
-  }
-
-  function _0x8edf() {
-    _0x3e4f.liveLocation.textContent = _0x1a2b.anchorLocation.name;
-    _0x4fab();
-    _0x7dce();
-    
-    if (_0x3e4f.solarWind) _0x3e4f.solarWind.textContent = `${_0x2c3d.solarWind} km/s`;
-    if (_0x3e4f.hpiPower) _0x3e4f.hpiPower.textContent = _0x2c3d.hpiPower;
-    if (_0x3e4f.bzDirection) _0x3e4f.bzDirection.textContent = `${_0x2c3d.bzDirection} nT`;
-    
-    _0x2c3d.lastUpdate = new Date().toLocaleTimeString();
-    if (_0x3e4f.lastUpdate) _0x3e4f.lastUpdate.textContent = _0x2c3d.lastUpdate;
-  }
-
-  // 实时画面刷新功能
-  function refreshLiveImage() {
-    if (_0x3e4f.liveImage) {
-      // 添加时间戳防止缓存
-      const timestamp = new Date().getTime();
-      const originalSrc = "https://pics.starvisor.net/galleries/orig/cap_bag.jpg";
-      _0x3e4f.liveImage.src = `${originalSrc}?t=${timestamp}`;
-      
-      // 更新画面底部的时间提示
-      const updateTime = new Date().toLocaleTimeString();
-      if (_0x3e4f.imageUpdateTime) {
-        _0x3e4f.imageUpdateTime.textContent = `极光实时观测画面 | 最近更新: ${updateTime}`;
-      }
-    }
-  }
-
-  // API调用函数
-  async function fetchAuroraData() {
-    try {
-      // 获取KP指数
-      try {
-        const kpRes = await fetch('https://services.swpc.noaa.gov/json/planetary_k_index_1m.json');
-        const kpData = await kpRes.json();
-        if (kpData?.length > 0) {
-          const latestKp = kpData[kpData.length - 1];
-          _0x2c3d.kpIndex = latestKp.estimated_kp?.toFixed(1) || "--";
-        }
-      } catch (e) {
-        console.warn("KP指数获取失败", e);
-      }
-      
-      // 获取太阳风数据
-      try {
-        const plasmaRes = await fetch('https://services.swpc.noaa.gov/products/solar-wind/plasma-2-hour.json');
-        const plasmaData = await plasmaRes.json();
+    const AuroraConfig = {
+        anchorLocation: {
+            name: "starvisor",
+            lat: 53.5,
+            lon: 122.3,
+            timezone: "Asia/Shanghai"
+        },
         
-        if (Array.isArray(plasmaData) && plasmaData.length > 1) {
-          const headers = plasmaData[0];
-          const speedIndex = headers.indexOf("speed");
-          const densityIndex = headers.indexOf("density");
-          const latest = plasmaData[plasmaData.length - 1];
-          
-          if (speedIndex !== -1 && latest[speedIndex]) {
-            _0x2c3d.solarWind = parseFloat(latest[speedIndex]);
-            _0x2c3d.solarDensity = parseFloat(latest[densityIndex]);
+        locations: {
+            arctic: { 
+                name: "北极村", 
+                lat: 53.5, 
+                lon: 122.3, 
+                factor: 1.25,
+                shootingParams: {
+                    low: "使用三脚架，ISO 800-1600，快门10-20秒，手动对焦无限远",
+                    medium: "使用三脚架，ISO 800-2000，快门15-25秒，手动对焦无限远，开启RAW格式",
+                    high: "使用稳固三脚架，ISO 3200-6400，快门20-30秒，手动对焦无限远，开启RAW格式，使用遥控快门"
+                }
+            },
+            heihe: { 
+                name: "黑河市", 
+                lat: 50.2, 
+                lon: 127.5, 
+                factor: 1.18,
+                shootingParams: {
+                    low: "使用三脚架，ISO 800-1600，快门10-20秒，手动对焦无限远",
+                    medium: "使用三脚架，ISO 800-2000，快门15-25秒，手动对焦无限远，开启RAW格式",
+                    high: "使用稳固三脚架，ISO 3200-6400，快门20-30秒，手动对焦无限远，开启RAW格式，使用遥控快门"
+                }
+            },
+            mangui: { 
+                name: "满归镇", 
+                lat: 52.0, 
+                lon: 122.0, 
+                factor: 1.15,
+                shootingParams: {
+                    low: "使用三脚架，ISO 800-1600，快门10-20秒，手动对焦无限远",
+                    medium: "使用三脚架，ISO 800-2000，快门15-25秒，手动对焦无限远，开启RAW格式",
+                    high: "使用稳固三脚架，ISO 3200-6400，快门20-30秒，手动对焦无限远，开启RAW格式，使用遥控快门"
+                }
+            },
+            genhe: { 
+                name: "根河市", 
+                lat: 50.8, 
+                lon: 121.5, 
+                factor: 1.15,
+                shootingParams: {
+                    low: "使用三脚架，ISO 800-1600，快门10-20秒，手动对焦无限远",
+                    medium: "使用三脚架，ISO 1600-3200，快门15-25秒，手动对焦无限远，开启RAW格式",
+                    high: "使用稳固三脚架，ISO 3200-6400，快门20-30秒，手动对焦无限远，开启RAW格式，使用遥控快门"
+                }
+            },
+            eerguna: { 
+                name: "额尔古纳", 
+                lat: 50.2, 
+                lon: 120.2, 
+                factor: 1.08,
+                shootingParams: {
+                    low: "使用三脚架，ISO 800-1600，快门10-20秒，手动对焦无限远",
+                    medium: "使用三脚架，ISO 1600-3200，快门15-25秒，手动对焦无限远，开启RAW格式",
+                    high: "使用稳固三脚架，ISO 3200-6400，快门20-30秒，手动对焦无限远，开启RAW格式，使用遥控快门"
+                }
+            },
+            hegu: { 
+                name: "禾木村", 
+                lat: 48.5, 
+                lon: 87.4, 
+                factor: 0.85,
+                shootingParams: {
+                    low: "使用三脚架，ISO 800-1600，快门10-20秒，手动对焦无限远",
+                    medium: "使用三脚架，ISO 1600-3200，快门15-25秒，手动对焦无限远，开启RAW格式",
+                    high: "使用稳固三脚架，ISO 3200-6400，快门20-30秒，手动对焦无限远，开启RAW格式，使用遥控快门"
+                }
+            },
+            hailar: { 
+                name: "海拉尔", 
+                lat: 49.2, 
+                lon: 119.7, 
+                factor: 1.05,
+                shootingParams: {
+                    low: "使用三脚架，ISO 800-1600，快门10-20秒，手动对焦无限远",
+                    medium: "使用三脚架，ISO 1600-3200，快门15-25秒，手动对焦无限远，开启RAW格式",
+                    high: "使用稳固三脚架，ISO 3200-6400，快门20-30秒，手动对焦无限远，开启RAW格式，使用遥控快门"
+                }
+            },
+            zalantun: { 
+                name: "扎兰屯", 
+                lat: 48.0, 
+                lon: 122.7, 
+                factor: 0.90,
+                shootingParams: {
+                    low: "使用三脚架，ISO 800-1600，快门10-20秒，手动对焦无限远",
+                    medium: "使用三脚架，ISO 1600-3200，快门15-25秒，手动对焦无限远，开启RAW格式",
+                    high: "使用稳固三脚架，ISO 3200-6400，快门20-30秒，手动对焦无限远，开启RAW格式，使用遥控快门"
+                }
+            }
+        },
+        
+        thresholds: {
+            probability: {
+                low: 30,
+                medium: 50,
+                high: 80
+            },
+            cloudCover: {
+                low: 30,
+                medium: 70
+            },
+            temperature: {
+                cold: -20,
+                medium: -10
+            },
+            windSpeed: {
+                medium: 500,
+                high: 600,
+                min: 300,
+                credible: 400
+            },
+            hpi: {
+                min: 20,
+                credible: 25
+            },
+            bz: {
+                min: -5,
+                credible: -10
+            },
+            density: {
+                min: 2,
+                credible: 3
+            },
+            bt: {
+                min: 3,
+                credible: 4
+            }
+        },
+        
+        liveCameraUrl: "https://pics.starvisor.net/galleries/orig/cap_bag.jpg",
+        auroraRefresh: 2 * 60 * 1000,
+        weatherRefresh: 10 * 60 * 1000
+    };
+
+    const AppState = {
+        kpIndex: "--",
+        forecastTime: "--",
+        globalProb: 0,
+        lastUpdate: null,
+        hpiPower: 0,
+        bzDirection: 0,
+        solarWind: 0,
+        solarDensity: 0,
+        dataStatus: "正在连接...",
+        dataCredible: true,
+        shootingTime: "--",
+        weatherCache: {}
+    };
+
+    const DomRefs = {
+        forecastTitle: document.getElementById('forecast-title'),
+        datetime: document.getElementById('datetime'),
+        liveLocation: document.getElementById('live-location'),
+        warningText: document.getElementById('warning-text'),
+        windSpeedIcon: document.getElementById('wind-speed-icon'),
+        kpDisplay: document.getElementById('kp-display'),
+        lastUpdate: document.getElementById('last-update'),
+        solarWind: document.getElementById('solar-wind'),
+        hpiPower: document.getElementById('hpi-power'),
+        bzDirection: document.getElementById('bz-direction'),
+        dataStatus: document.getElementById('data-status'),
+        liveCamera: document.getElementById('live-camera'),
+        cameraPlaceholder: document.getElementById('camera-placeholder'),
+        cities: {
+            arctic: {
+                container: document.getElementById('city-arctic'),
+                prob: document.getElementById('arctic-prob'),
+                cloud: document.getElementById('arctic-cloud'),
+                temp: document.getElementById('arctic-temp'),
+                tips: document.getElementById('arctic-shooting-tips'),
+                params: document.getElementById('arctic-params')
+            },
+            mangui: {
+                container: document.getElementById('city-mangui'),
+                prob: document.getElementById('mangui-prob'),
+                cloud: document.getElementById('mangui-cloud'),
+                temp: document.getElementById('mangui-temp'),
+                tips: document.getElementById('mangui-shooting-tips'),
+                params: document.getElementById('mangui-params')
+            },
+            genhe: {
+                container: document.getElementById('city-genhe'),
+                prob: document.getElementById('genhe-prob'),
+                cloud: document.getElementById('genhe-cloud'),
+                temp: document.getElementById('genhe-temp'),
+                tips: document.getElementById('genhe-shooting-tips'),
+                params: document.getElementById('genhe-params')
+            },
+            eerguna: {
+                container: document.getElementById('city-eerguna'),
+                prob: document.getElementById('eerguna-prob'),
+                cloud: document.getElementById('eerguna-cloud'),
+                temp: document.getElementById('eerguna-temp'),
+                tips: document.getElementById('eerguna-shooting-tips'),
+                params: document.getElementById('eerguna-params')
+            },
+            heihe: {
+                container: document.getElementById('city-heihe'),
+                prob: document.getElementById('heihe-prob'),
+                cloud: document.getElementById('heihe-cloud'),
+                temp: document.getElementById('heihe-temp'),
+                tips: document.getElementById('heihe-shooting-tips'),
+                params: document.getElementById('heihe-params')
+            },
+            hegu: {
+                container: document.getElementById('city-hegu'),
+                prob: document.getElementById('hegu-prob'),
+                cloud: document.getElementById('hegu-cloud'),
+                temp: document.getElementById('hegu-temp'),
+                tips: document.getElementById('hegu-shooting-tips'),
+                params: document.getElementById('hegu-params')
+            },
+            hailar: {
+                container: document.getElementById('city-hailar'),
+                prob: document.getElementById('hailar-prob'),
+                cloud: document.getElementById('hailar-cloud'),
+                temp: document.getElementById('hailar-temp'),
+                tips: document.getElementById('hailar-shooting-tips'),
+                params: document.getElementById('hailar-params')
+            },
+            zalantun: {
+                container: document.getElementById('city-zalantun'),
+                prob: document.getElementById('zalantun-prob'),
+                cloud: document.getElementById('zalantun-cloud'),
+                temp: document.getElementById('zalantun-temp'),
+                tips: document.getElementById('zalantun-shooting-tips'),
+                params: document.getElementById('zalantun-params')
+            }
+        }
+    };
+
+    function clearClasses(element) {
+        if (element) element.className = '';
+    }
+    
+    function getProbColor(probability) {
+        if (probability >= AuroraConfig.thresholds.probability.high) {
+            return 'text-aurora-red';
+        } else if (probability >= AuroraConfig.thresholds.probability.medium) {
+            return 'text-aurora-orange';
+        } else if (probability >= AuroraConfig.thresholds.probability.low) {
+            return 'text-aurora-green';
+        } else {
+            return 'text-gray-400';
+        }
+    }
+    
+    function getCloudColor(cloudCover) {
+        if (cloudCover >= AuroraConfig.thresholds.cloudCover.medium) {
+            return 'text-aurora-red';
+        } else if (cloudCover >= AuroraConfig.thresholds.cloudCover.low) {
+            return 'text-aurora-orange';
+        } else {
+            return 'text-aurora-green';
+        }
+    }
+    
+    function getTempColor(temperature) {
+        if (temperature <= AuroraConfig.thresholds.temperature.cold) {
+            return 'text-aurora-blue';
+        } else if (temperature <= AuroraConfig.thresholds.temperature.medium) {
+            return 'text-aurora-purple';
+        } else {
+            return 'text-white';
+        }
+    }
+    
+    function getWindColor(speed) {
+        if (speed >= AuroraConfig.thresholds.windSpeed.high) {
+            return 'text-aurora-red';
+        } else if (speed >= AuroraConfig.thresholds.windSpeed.medium) {
+            return 'text-aurora-orange';
+        } else {
+            return 'text-aurora-green';
+        }
+    }
+
+    function checkCameraImage() {
+        const img = new Image();
+        img.onload = function() {
+            if (DomRefs.cameraPlaceholder) {
+                DomRefs.cameraPlaceholder.style.display = 'none';
+            }
+        };
+        img.onerror = function() {
+            if (DomRefs.cameraPlaceholder) {
+                DomRefs.cameraPlaceholder.style.display = 'flex';
+            }
+        };
+        img.src = AuroraConfig.liveCameraUrl + '?' + new Date().getTime();
+    }
+
+    function isDataValid() {
+        const t = AuroraConfig.thresholds;
+        
+        if (AppState.solarWind < t.windSpeed.min) return false;
+        if (AppState.hpiPower < t.hpi.min) return false;
+        if (AppState.bzDirection > t.bz.min) return false;
+        if (AppState.solarDensity < t.density.min) return false;
+        if (parseFloat(AppState.kpIndex) < t.bt.min) return false;
+        
+        return true;
+    }
+
+    function calcShootTime() {
+        if (!AppState.forecastTime || AppState.forecastTime === "--") return "--";
+        
+        const now = new Date();
+        const shootTime = new Date(now.getTime() + AppState.forecastTime * 60 * 1000);
+        
+        const hours = String(shootTime.getHours()).padStart(2, '0');
+        const minutes = String(shootTime.getMinutes()).padStart(2, '0');
+        
+        return `${hours}:${minutes}`;
+    }
+
+    function updateCameraTips() {
+        for (const [key, loc] of Object.entries(AuroraConfig.locations)) {
+            const city = DomRefs.cities[key];
+            if (!city || !city.tips) continue;
             
-            const distanceKm = 1500000;
-            const delayMinutes = 2;
-            const arrivalTimeMinutes = Math.round((distanceKm / _0x2c3d.solarWind / 60) + delayMinutes);
-            _0x2c3d.forecastTime = arrivalTimeMinutes;
-          }
+            const actualProb = AppState.dataCredible ? calcAuroraProb(
+                AppState.hpiPower || 0,
+                AppState.bzDirection || 0,
+                AppState.solarWind || 0,
+                AppState.solarDensity || 0,
+                loc.factor
+            ) : 0;
+            
+            if (!AppState.dataCredible || actualProb < AuroraConfig.thresholds.probability.low) {
+                city.tips.classList.add('hidden');
+            } else {
+                city.tips.classList.remove('hidden');
+                
+                let paramsText = "";
+                if (actualProb >= AuroraConfig.thresholds.probability.high) {
+                    paramsText = loc.shootingParams.high;
+                    city.tips.className = city.tips.className.replace(/bg-[^ ]*/g, '') + ' bg-aurora-red/20';
+                } else if (actualProb >= AuroraConfig.thresholds.probability.medium) {
+                    paramsText = loc.shootingParams.medium;
+                    city.tips.className = city.tips.className.replace(/bg-[^ ]*/g, '') + ' bg-aurora-orange/20';
+                } else {
+                    paramsText = loc.shootingParams.low;
+                    city.tips.className = city.tips.className.replace(/bg-[^ ]*/g, '') + ' bg-aurora-green/20';
+                }
+                
+                const cloudText = city.cloud.textContent;
+                const cloudMatch = cloudText.match(/\d+/);
+                if (cloudMatch) {
+                    const cloudValue = parseInt(cloudMatch[0]);
+                    if (cloudValue > 50) {
+                        paramsText += " ⚠️北边云量" + cloudValue + "%，可能影响观测";
+                    } else if (cloudValue > 30) {
+                        paramsText += " ⚠️注意北边云量变化";
+                    }
+                }
+                
+                city.params.textContent = paramsText;
+            }
         }
-      } catch (e) {
-        console.warn("太阳风数据获取失败", e);
-      }
-      
-      // 获取HPI强度
-      try {
-        const hpiRes = await fetch('https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt');
-        const hpiText = await hpiRes.text();
-        const validLines = hpiText.trim().split("\n").filter(line => !line.startsWith("#"));
-        if (validLines.length > 0) {
-          const lastLine = validLines[validLines.length - 1];
-          const columns = lastLine.split(/\s+/).filter(Boolean);
-          if (columns.length >= 3) {
-            _0x2c3d.hpiPower = parseFloat(columns[2]) || 0;
-          }
-        }
-      } catch (e) {
-        console.warn("HPI强度获取失败", e);
-      }
-      
-      // 获取Bz方向
-      try {
-        const magRes = await fetch('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json');
-        const magData = await magRes.json();
+    }
+
+    function updateTime() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
         
-        if (Array.isArray(magData) && magData.length > 1) {
-          const headers = magData[0];
-          const bzIndex = headers.indexOf("bz_gsm");
-          const latest = magData[magData.length - 1];
-          
-          if (bzIndex !== -1) {
-            _0x2c3d.bzDirection = latest[bzIndex] ? parseFloat(latest[bzIndex]) : 0;
-          }
-        }
-      } catch (e) {
-        console.warn("Bz方向获取失败", e);
-      }
-      
-      _0x8edf();
-      
-    } catch (error) {
-      console.error("极光数据获取错误:", error);
+        DomRefs.datetime.innerHTML = `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
     }
-  }
 
-  async function fetchWeather() {
-    try {
-      for (const [key, loc] of Object.entries(_0x1a2b.locations)) {
+    function calcAuroraProb(hpi, bz, wind, density, locationFactor) {
+        if (!isDataValid()) return 0;
+        
+        let probability = 0;
+        const t = AuroraConfig.thresholds;
+        const duration = AppState.forecastTime || 30;
+
+        if (hpi >= 90) probability += 35;
+        else if (hpi >= 70) probability += 25;
+        else if (hpi >= 50) probability += 15;
+        else if (hpi >= t.hpi.credible) probability += 10;
+
+        if (bz < -15) probability += 30;
+        else if (bz < -10) probability += 20;
+        else if (bz < t.bz.credible) probability += 10;
+
+        if (wind >= 750) probability += 20;
+        else if (wind >= 600) probability += 15;
+        else if (wind >= 500) probability += 10;
+        else if (wind >= t.windSpeed.credible) probability += 5;
+
+        if (density >= 10) probability += 5;
+        else if (density >= 5) probability += 3;
+        else if (density >= t.density.credible) probability += 2;
+        else probability += Math.min(1, density);
+
+        if (duration >= 60) probability += 15;
+        else if (duration >= 45) probability += 10;
+        else if (duration >= 30) probability += 7;
+        else if (duration >= 15) probability += 3;
+
+        probability *= locationFactor;
+
+        return Math.min(95, Math.max(0, probability));
+    }
+
+    function updateAllProbabilities() {
+        if (AppState.kpIndex === "--") return;
+        
+        AppState.dataCredible = isDataValid();
+        AppState.shootingTime = calcShootTime();
+        
+        for (const [key, loc] of Object.entries(AuroraConfig.locations)) {
+            const actualProb = AppState.dataCredible ? calcAuroraProb(
+                AppState.hpiPower || 0,
+                AppState.bzDirection || 0,
+                AppState.solarWind || 0,
+                AppState.solarDensity || 0,
+                loc.factor
+            ) : 0;
+            
+            const city = DomRefs.cities[key];
+            if (!city || !city.prob) continue;
+            
+            let probText;
+            if (!AppState.dataCredible) {
+                probText = "概率: 无极光";
+            } else if (actualProb < AuroraConfig.thresholds.probability.low) {
+                probText = "概率: 可能微弱极光";
+            } else {
+                probText = `概率: ${Math.round(actualProb)}%`;
+            }
+            
+            city.prob.textContent = probText;
+            clearClasses(city.prob);
+            city.prob.className = `text-xl font-bold ${getProbColor(actualProb)} text-shadow-heavy`;
+            
+            clearClasses(city.container);
+            city.container.className = 'region-container glass-effect rounded-2xl overflow-hidden';
+            
+            if (!AppState.dataCredible) {
+                city.container.style.opacity = '0.6';
+            } else {
+                city.container.style.opacity = '1';
+                if (actualProb >= AuroraConfig.thresholds.probability.high) {
+                    city.container.classList.add('region-high');
+                } else if (actualProb >= AuroraConfig.thresholds.probability.medium) {
+                    city.container.classList.add('region-warning');
+                }
+            }
+        }
+        
+        if (!AppState.dataCredible) {
+            AppState.globalProb = 0;
+        } else {
+            let totalProb = 0;
+            let count = 0;
+            for (const [key, loc] of Object.entries(AuroraConfig.locations)) {
+                const prob = calcAuroraProb(
+                    AppState.hpiPower || 0,
+                    AppState.bzDirection || 0,
+                    AppState.solarWind || 0,
+                    AppState.solarDensity || 0,
+                    loc.factor
+                );
+                totalProb += prob;
+                count++;
+            }
+            AppState.globalProb = Math.round(totalProb / count);
+        }
+        
+        DomRefs.kpDisplay.textContent = `KP: ${AppState.kpIndex}`;
+        
+        if (AppState.forecastTime !== "--") {
+            const timeText = AppState.dataCredible && AppState.shootingTime !== "--" 
+                ? `${AppState.forecastTime}分钟后(${AppState.shootingTime}时)极光预报`
+                : `${AppState.forecastTime}分钟后极光预报`;
+            
+            DomRefs.forecastTitle.textContent = timeText;
+            
+            clearClasses(DomRefs.forecastTitle);
+            DomRefs.forecastTitle.className = `font-bold text-lg ${getWindColor(AppState.solarWind)} text-shadow`;
+            
+            clearClasses(DomRefs.windSpeedIcon);
+            DomRefs.windSpeedIcon.className = `fa fa-bolt mr-2 ${getWindColor(AppState.solarWind)}`;
+        }
+        
+        updateAlertText();
+        updateCameraTips();
+    }
+
+    function updateAlertText() {
+        let text = "";
+        let textColor = "text-white";
+        
+        if (!AppState.dataCredible) {
+            text = "❌ 预报通知：国内空间天气平静，无足够强度的太阳风驱动极光产生！因此当前拍摄到的带色彩的夜空画面，以气辉为主 —— 科普：气辉本就是高层大气 '默默发光' 的常态现象。";
+            textColor = "text-gray-400";
+        } else if (AppState.globalProb >= AuroraConfig.thresholds.probability.high) {
+            text = `🔥 极光强预警：综合概率${AppState.globalProb}%，建议${AppState.shootingTime}时在光污染等级≤2级地区观测`;
+            textColor = "text-aurora-red";
+        } else if (AppState.globalProb >= AuroraConfig.thresholds.probability.medium) {
+            text = `⚠️ 极光预警：综合概率${AppState.globalProb}%，建议${AppState.shootingTime}时在暗空环境尝试拍摄`;
+            textColor = "text-aurora-orange";
+        } else if (AppState.globalProb >= AuroraConfig.thresholds.probability.low) {
+            text = `📷 极光观测提示：综合概率${AppState.globalProb}%，${AppState.shootingTime}时可在暗空环境尝试拍摄`;
+            textColor = "text-aurora-green";
+        } else {
+            text = "当前无极光预警信息";
+            textColor = "text-gray-300";
+        }
+        
+        DomRefs.warningText.textContent = text;
+        
+        clearClasses(DomRefs.warningText);
+        if (AppState.dataCredible && AppState.globalProb >= AuroraConfig.thresholds.probability.high) {
+            DomRefs.warningText.className = `${textColor} text-base font-bold text-center warning-pulse text-shadow-heavy`;
+        } else if (AppState.dataCredible && AppState.globalProb >= AuroraConfig.thresholds.probability.medium) {
+            DomRefs.warningText.className = `${textColor} text-base font-bold text-center warning-pulse text-shadow-heavy`;
+        } else {
+            DomRefs.warningText.className = `${textColor} text-base font-bold text-center text-shadow-heavy`;
+        }
+    }
+
+    function updateWeatherColors() {
+        for (const [key, city] of Object.entries(DomRefs.cities)) {
+            if (city.cloud) {
+                const cloudText = city.cloud.textContent;
+                const cloudMatch = cloudText.match(/\d+/);
+                if (cloudMatch) {
+                    const cloudValue = parseInt(cloudMatch[0]);
+                    clearClasses(city.cloud);
+                    city.cloud.className = `text-sm font-medium ${getCloudColor(cloudValue)} text-shadow-heavy`;
+                }
+            }
+            
+            if (city.temp) {
+                const tempText = city.temp.textContent;
+                const tempMatch = tempText.match(/-?\d+/);
+                if (tempMatch) {
+                    const tempValue = parseInt(tempMatch[0]);
+                    clearClasses(city.temp);
+                    city.temp.className = `text-sm font-medium ${getTempColor(tempValue)} text-shadow-heavy`;
+                }
+            }
+        }
+    }
+
+    function refreshDisplay() {
+        DomRefs.liveLocation.textContent = AuroraConfig.anchorLocation.name;
+        updateAllProbabilities();
+        updateWeatherColors();
+        
+        if (DomRefs.solarWind) DomRefs.solarWind.textContent = `${AppState.solarWind} km/s`;
+        if (DomRefs.hpiPower) DomRefs.hpiPower.textContent = AppState.hpiPower;
+        if (DomRefs.bzDirection) DomRefs.bzDirection.textContent = `${AppState.bzDirection} nT`;
+        
+        let statusText = AppState.dataStatus;
+        if (!AppState.dataCredible) statusText += " (条件不佳)";
+        if (DomRefs.dataStatus) DomRefs.dataStatus.textContent = statusText;
+        if (DomRefs.lastUpdate) DomRefs.lastUpdate.textContent = AppState.lastUpdate || "--";
+    }
+
+    async function getAuroraData() {
         try {
-          const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,cloud_cover&timezone=auto`;
-          const response = await fetch(apiUrl);
-          const data = await response.json();
-          
-          const city = _0x3e4f.cities[key];
-          
-          if (city && city.temp && data?.current?.temperature_2m !== undefined) {
-            city.temp.textContent = `温度: ${Math.round(data.current.temperature_2m)}°C`;
-          }
-          if (city && city.cloud && data?.current?.cloud_cover !== undefined) {
-            city.cloud.textContent = `云量: ${data.current.cloud_cover}%`;
-          }
-        } catch (e) {
-          console.warn(`${loc.name}天气获取失败`, e);
-          const city = _0x3e4f.cities[key];
-          if (city && city.temp) {
-            city.temp.textContent = `温度: -${Math.floor(Math.random() * 15) + 5}°C`;
-          }
-          if (city && city.cloud) {
-            city.cloud.textContent = `云量: ${Math.floor(Math.random() * 30)}%`;
-          }
+            AppState.dataStatus = "正在获取数据...";
+            refreshDisplay();
+
+            try {
+                const kpRes = await fetch('https://services.swpc.noaa.gov/json/planetary_k_index_1m.json');
+                if (!kpRes.ok) throw new Error(`HTTP error! status: ${kpRes.status}`);
+                const kpData = await kpRes.json();
+                if (kpData && kpData.length > 0) {
+                    const latestKp = kpData[kpData.length - 1];
+                    AppState.kpIndex = latestKp.estimated_kp?.toFixed(1) || "--";
+                }
+            } catch (e) {
+                console.warn("KP指数获取失败", e);
+                AppState.kpIndex = "--";
+            }
+
+            try {
+                const plasmaRes = await fetch('https://services.swpc.noaa.gov/products/solar-wind/plasma-2-hour.json');
+                if (!plasmaRes.ok) throw new Error(`HTTP error! status: ${plasmaRes.status}`);
+                const plasmaData = await plasmaRes.json();
+                
+                if (Array.isArray(plasmaData) && plasmaData.length > 1) {
+                    const headers = plasmaData[0];
+                    const speedIndex = headers.indexOf("speed");
+                    const densityIndex = headers.indexOf("density");
+                    
+                    if (speedIndex !== -1 && densityIndex !== -1) {
+                        const latest = plasmaData[plasmaData.length - 1];
+                        AppState.solarWind = parseFloat(latest[speedIndex]) || 0;
+                        AppState.solarDensity = parseFloat(latest[densityIndex]) || 0;
+                        
+                        const distanceKm = 1500000;
+                        const delayMinutes = 2;
+                        const arrivalTimeMinutes = Math.round((distanceKm / AppState.solarWind / 60) + delayMinutes);
+                        AppState.forecastTime = arrivalTimeMinutes;
+                    }
+                }
+            } catch (e) {
+                console.warn("太阳风数据获取失败", e);
+                AppState.solarWind = 0;
+                AppState.solarDensity = 0;
+            }
+
+            try {
+                const hpiRes = await fetch('https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt');
+                if (!hpiRes.ok) throw new Error(`HTTP error! status: ${hpiRes.status}`);
+                const hpiText = await hpiRes.text();
+                const validLines = hpiText.trim().split("\n").filter(line => line.trim() && !line.startsWith("#"));
+                if (validLines.length > 0) {
+                    const lastLine = validLines[validLines.length - 1];
+                    const columns = lastLine.split(/\s+/).filter(Boolean);
+                    if (columns.length >= 3) AppState.hpiPower = parseFloat(columns[2]) || 0;
+                }
+            } catch (e) {
+                console.warn("HPI强度获取失败", e);
+                AppState.hpiPower = 0;
+            }
+
+            try {
+                const magRes = await fetch('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json');
+                if (!magRes.ok) throw new Error(`HTTP error! status: ${magRes.status}`);
+                const magData = await magRes.json();
+                
+                if (Array.isArray(magData) && magData.length > 1) {
+                    const headers = magData[0];
+                    const bzIndex = headers.indexOf("bz_gsm");
+                    
+                    if (bzIndex !== -1) {
+                        const latest = magData[magData.length - 1];
+                        AppState.bzDirection = latest[bzIndex] ? parseFloat(latest[bzIndex]) : 0;
+                    }
+                }
+            } catch (e) {
+                console.warn("Bz方向获取失败", e);
+                AppState.bzDirection = 0;
+            }
+            
+            AppState.dataStatus = "数据正常";
+            AppState.lastUpdate = new Date().toLocaleTimeString();
+            refreshDisplay();
+            
+        } catch (error) {
+            console.error("极光数据获取错误:", error);
+            AppState.dataStatus = "数据获取失败";
+            refreshDisplay();
         }
-      }
-      
-      _0x7dce();
-      
-    } catch (error) {
-      console.error("天气数据获取错误:", error);
     }
-  }
 
-  // 初始化应用
-  function initApp() {
-    _0x9fd0();
-    
-    fetchAuroraData();
-    fetchWeather();
-    refreshLiveImage();
-    
-    setInterval(fetchAuroraData, _0x1a2b.auroraRefresh);
-    setInterval(fetchWeather, _0x1a2b.weatherRefresh);
-    setInterval(_0x9fd0, 1000);
-    setInterval(refreshLiveImage, _0x1a2b.imageRefresh);
-    
-    console.log("艾探索极光观测系统已启动");
-  }
+    async function getWeatherData() {
+        try {
+            for (const [key, loc] of Object.entries(AuroraConfig.locations)) {
+                try {
+                    const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,cloud_cover&timezone=auto`;
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const data = await response.json();
+                    
+                    const city = DomRefs.cities[key];
+                    
+                    if (city && city.temp && data?.current?.temperature_2m !== undefined) {
+                        const temp = Math.round(data.current.temperature_2m);
+                        city.temp.textContent = `温度: ${temp}°C`;
+                        if (!AppState.weatherCache[key]) AppState.weatherCache[key] = {};
+                        AppState.weatherCache[key].temp = temp;
+                    }
+                    
+                    if (city && city.cloud && data?.current?.cloud_cover !== undefined) {
+                        const cloud = data.current.cloud_cover;
+                        city.cloud.textContent = `云量: ${cloud}%`;
+                        if (!AppState.weatherCache[key]) AppState.weatherCache[key] = {};
+                        AppState.weatherCache[key].cloud = cloud;
+                    }
+                    
+                } catch (e) {
+                    console.warn(`${loc.name}天气获取失败`, e);
+                    const city = DomRefs.cities[key];
+                    const cache = AppState.weatherCache[key];
+                    
+                    if (city && city.temp) {
+                        if (cache?.temp !== undefined) city.temp.textContent = `温度: ${cache.temp}°C ⚠️`;
+                        else city.temp.textContent = `温度: -- °C`;
+                    }
+                    
+                    if (city && city.cloud) {
+                        if (cache?.cloud !== undefined) city.cloud.textContent = `云量: ${cache.cloud}% ⚠️`;
+                        else city.cloud.textContent = `云量: -- %`;
+                    }
+                }
+            }
+            
+            updateWeatherColors();
+            
+        } catch (error) {
+            console.error("天气数据获取错误:", error);
+        }
+    }
 
-  document.addEventListener('DOMContentLoaded', initApp);
-  </script>
-</body>
-</html>
+    function startApp() {
+        updateTime();
+        getAuroraData();
+        getWeatherData();
+        checkCameraImage();
+        
+        setInterval(getAuroraData, AuroraConfig.auroraRefresh);
+        setInterval(getWeatherData, AuroraConfig.weatherRefresh);
+        setInterval(updateTime, 1000);
+        
+        console.log("极光观测系统已启动");
+    }
+
+    document.addEventListener('DOMContentLoaded', startApp);
+})();
+</script>
