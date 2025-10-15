@@ -1,1 +1,874 @@
-数据异常在修复
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>艾探索-三天极光预报</title>
+  <meta name="description" content="三天极光预报">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            aurora: {
+              blue: '#4096ff',
+              green: '#52c41a',
+              orange: '#fa8c16',
+              red: '#f5222d',
+              purple: '#722ed1',
+              pink: '#ff4d4f',
+              dark: '#141414'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      }
+      .text-shadow-heavy {
+        text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.7);
+      }
+      .glass-effect {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+      .live-pulse {
+        animation: pulse 4s infinite;
+      }
+      .current-period {
+        animation: highlight 2s infinite alternate;
+        background: rgba(255, 77, 79, 0.3) !important;
+        border-left: 4px solid #ff4d4f;
+      }
+      .warning-tooltip {
+        animation: pulse 2s infinite;
+      }
+     
+      @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.6; }
+        100% { opacity: 1; }
+      }
+      @keyframes highlight {
+        0% { background-color: rgba(255, 77, 79, 0.3); }
+        100% { background-color: rgba(255, 77, 79, 0.4); }
+      }
+      
+      /* 水印样式 */
+      .watermark {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .watermark-text {
+        font-size: 120px;
+        font-weight: bold;
+        color: rgba(255, 255, 255, 0.03);
+        transform: rotate(-30deg);
+        user-select: none;
+        white-space: nowrap;
+        font-family: 'Microsoft YaHei', sans-serif;
+      }
+      
+      /* 提示框样式 - 手机适配 */
+      .tooltip {
+        position: relative;
+        cursor: pointer;
+      }
+      
+      .tooltip-text {
+        visibility: hidden;
+        width: 200px;
+        background-color: rgba(0, 0, 0, 0.95);
+        color: white;
+        text-align: left;
+        border-radius: 6px;
+        padding: 8px 12px;
+        position: absolute;
+        z-index: 10000;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 12px;
+        line-height: 1.5;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        margin-bottom: 8px;
+      }
+      
+      .tooltip:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+      }
+      
+      /* 白天/夜间时段样式 */
+      .daytime {
+        opacity: 0.6;
+      }
+      .daytime-label {
+        color: #ffd700;
+      }
+      .nighttime-label {
+        color: #4fc3f7;
+      }
+      
+      /* 表格样式 - 美化 */
+      .time-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 8px;
+      }
+      
+      .time-table th {
+        text-align: left;
+        padding: 8px 6px;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 13px;
+        font-weight: 600;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+      }
+      
+      .time-table td {
+        padding: 10px 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      }
+      
+      .time-slot {
+        transition: all 0.3s ease;
+      }
+      
+      .time-slot:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-1px);
+      }
+      
+      /* KP柱状图样式 */
+      .kp-bar-container {
+        width: 100%;
+        height: 28px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 14px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        min-width: 120px;
+      }
+      
+      .kp-bar {
+        height: 100%;
+        border-radius: 14px;
+        transition: all 0.8s ease;
+        position: relative;
+        overflow: hidden;
+        min-width: 30px; /* 确保小数值也有足够宽度 */
+      }
+      
+      .kp-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, 
+          transparent 0%, 
+          rgba(255,255,255,0.2) 50%, 
+          transparent 100%);
+        animation: shimmer 2s infinite;
+      }
+      
+      @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+      
+      .kp-value-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-weight: bold;
+        font-size: 12px;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        z-index: 2;
+        white-space: nowrap;
+        padding: 0 8px;
+      }
+      
+      /* KP值颜色样式 */
+      .kp-bar-0-3 { background: linear-gradient(90deg, #52c41a, #73d13d); }
+      .kp-bar-4-5 { background: linear-gradient(90deg, #fa8c16, #ffa940); }
+      .kp-bar-6 { background: linear-gradient(90deg, #fa541c, #ff7a45); }
+      .kp-bar-7-9 { background: linear-gradient(90deg, #f5222d, #ff4d4f); }
+      
+      .kp-text-low { color: #52c41a; }
+      .kp-text-medium { color: #fa8c16; }
+      .kp-text-high { color: #f5222d; }
+      
+      /* 肉眼可见标签样式 */
+      .naked-eye {
+        display: inline-block;
+        background: linear-gradient(45deg, #ffd700, #ffa500);
+        color: #000;
+        font-size: 10px;
+        font-weight: bold;
+        padding: 2px 6px;
+        border-radius: 10px;
+        margin-left: 6px;
+        animation: glow 2s infinite alternate;
+      }
+      
+      @keyframes glow {
+        0% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+        100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.8); }
+      }
+      
+      /* 概览卡片点击效果 */
+      .daily-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      
+      .daily-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+      }
+      
+      /* 手机适配样式 */
+      @media (max-width: 640px) {
+        .watermark-text {
+          font-size: 80px;
+        }
+        
+        .tooltip-text {
+          width: 180px;
+          font-size: 11px;
+        }
+        
+        .time-table th,
+        .time-table td {
+          padding: 8px 4px;
+          font-size: 12px;
+        }
+        
+        /* 调整列宽比例，给KP柱状图更多空间 */
+        .time-table th:nth-child(1),
+        .time-table td:nth-child(1) {
+          width: 32%;
+          padding-left: 8px;
+        }
+        
+        .time-table th:nth-child(2),
+        .time-table td:nth-child(2) {
+          width: 8%;
+          text-align: center;
+          padding: 0;
+        }
+        
+        .time-table th:nth-child(3),
+        .time-table td:nth-child(3) {
+          width: 60%;
+          padding-right: 8px;
+        }
+        
+        .kp-bar-container {
+          height: 24px;
+          min-width: 100px;
+        }
+        
+        .kp-value-text {
+          font-size: 11px;
+          padding: 0 6px;
+        }
+        
+        /* 日期时间紧凑显示 */
+        .compact-date {
+          font-size: 12px;
+          line-height: 1.2;
+        }
+        
+        .compact-time {
+          font-size: 11px;
+          line-height: 1.2;
+        }
+      }
+      
+      /* 桌面端样式 */
+      @media (min-width: 641px) {
+        .time-table th:nth-child(1),
+        .time-table td:nth-child(1) {
+          width: 35%;
+          padding-left: 12px;
+        }
+        
+        .time-table th:nth-child(2),
+        .time-table td:nth-child(2) {
+          width: 10%;
+          text-align: center;
+          padding: 0;
+        }
+        
+        .time-table th:nth-child(3),
+        .time-table td:nth-child(3) {
+          width: 55%;
+          padding-right: 12px;
+        }
+      }
+    }
+  </style>
+</head>
+<body class="bg-transparent overflow-x-hidden">
+  <!-- 水印 -->
+  <div class="watermark">
+    <div class="watermark-text">艾探索</div>
+  </div>
+
+  <div class="min-h-screen bg-gradient-to-br from-gray-900 to-blue-900 p-4 relative z-10">
+    <!-- 顶部标题区域 -->
+    <div class="glass-effect rounded-2xl p-4 mb-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <div class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-aurora-blue to-aurora-purple rounded-full flex items-center justify-center mr-3">
+            <i class="fa fa-star text-white text-sm md:text-lg"></i>
+          </div>
+          <div>
+            <div class="text-white font-bold text-shadow text-lg md:text-xl">艾探索-三天极光预报</div>
+            <div id="datetime" class="text-white text-xs md:text-sm text-shadow-heavy">2025/10/15 14:30:00</div>
+          </div>
+        </div>
+        
+        <!-- 删除右上角提示和最大KP -->
+        <div class="flex items-center space-x-2 md:space-x-3">
+          <div class="text-aurora-green text-xs md:text-sm">
+            自动更新: <span id="refresh-timer">5:00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 未来三天最大KP值概览 -->
+    <div class="glass-effect rounded-2xl p-4 mb-4">
+      <div class="text-white text-base font-bold text-shadow-heavy text-center mb-3">
+        未来三天极光活动概览
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="daily-max-overview">
+        <!-- 将通过JS动态生成 -->
+      </div>
+    </div>
+
+    <!-- 预报说明 -->
+    <div class="glass-effect rounded-xl p-3 mb-4">
+      <div class="text-white text-base font-bold text-shadow-heavy text-center">
+        未来三天极光活动（按时间顺序排列）
+      </div>
+      <div class="text-center text-aurora-green text-xs mt-1">
+        <i class="fa fa-moon mr-1"></i>蓝色=夜间（可观测） 
+        <i class="fa fa-sun ml-3 mr-1"></i>黄色=白天（不可观测）
+        <span class="ml-3 text-aurora-red"><i class="fa fa-circle text-xs"></i> 当前时段</span>
+        <span class="ml-3 text-aurora-orange"><i class="fa fa-exclamation-triangle text-xs"></i> 高活性提示</span>
+      </div>
+    </div>
+
+    <!-- 统一时段表格（无日期分组，按时间排序） -->
+    <div class="glass-effect rounded-2xl p-4 mb-4">
+      <div class="overflow-x-auto">
+        <table class="time-table w-full" id="all-periods-table">
+          <thead>
+            <tr>
+              <th>北京时间</th>
+              <th></th> <!-- 提示图标列 -->
+              <th>KP值强度</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 时段数据将通过JS动态生成，按时间顺序排列 -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 数据源和刷新 - 删除刷新按钮 -->
+    <div class="glass-effect rounded-2xl p-4 mb-4">
+      <div class="text-center text-gray-300 text-xs">
+        数据来源: NOAA 美国国家海洋和大气管理局 | 自动更新周期：5分钟
+      </div>
+    </div>
+
+    <!-- 底部信息 -->
+    <div class="text-center text-gray-400 text-xs mt-4 pb-4">
+      <div>公众号:极光预报-小红书：艾探索追极光 © 2025</div>
+    </div>
+  </div>
+
+  <script>
+    // 全局变量：存储所有时段数据
+    let allPeriodsData = [];
+    let refreshTimer = 300; // 5分钟倒计时
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      // 实时更新时间
+      updateTime();
+      setInterval(updateTime, 1000);
+      
+      // 启动5分钟倒计时
+      startRefreshTimer();
+      
+      // 加载预报数据
+      fetchForecast();
+      
+      // 每5分钟自动刷新
+      setInterval(fetchForecast, 300000);
+    });
+
+    // 5分钟倒计时
+    function startRefreshTimer() {
+      setInterval(() => {
+        refreshTimer--;
+        if (refreshTimer <= 0) {
+          refreshTimer = 300; // 重置为5分钟
+        }
+        
+        const minutes = Math.floor(refreshTimer / 60);
+        const seconds = refreshTimer % 60;
+        document.getElementById('refresh-timer').textContent = 
+          `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      }, 1000);
+    }
+
+    // 更新当前时间
+    function updateTime() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      
+      document.getElementById('datetime').innerHTML = `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+      
+      // 实时更新当前时段高亮
+      highlightCurrentPeriod();
+    }
+
+    // 从NOAA获取数据
+    async function fetchForecast() {
+      try {
+        const response = await fetch('https://services.swpc.noaa.gov/text/3-day-forecast.txt');
+        if (!response.ok) throw new Error(`状态码: ${response.status}`);
+        
+        const data = await response.text();
+        allPeriodsData = processForecastData(data); // 处理为统一时段数组
+        renderAllPeriodsTable(); // 渲染表格（按时间排序）
+        renderDailyMaxOverview(); // 渲染每日最大KP概览
+        
+        // 重置倒计时
+        refreshTimer = 300;
+        
+      } catch (error) {
+        console.error('数据获取失败:', error);
+        renderErrorState(); // 显示错误状态
+        // 30秒后重试
+        setTimeout(fetchForecast, 30000);
+      }
+    }
+
+    // 处理NOAA数据：转换为统一时段数组（无日期分组）
+    function processForecastData(rawData) {
+      const periods = [];
+      const lines = rawData.split('\n');
+      let inTable = false;
+      
+      // 提取UTC日期标题
+      const dateTitles = [];
+      for (const line of lines) {
+        // 查找包含日期标题的行，例如 "Oct 15       Oct 16       Oct 17"
+        if (line.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}/g)) {
+          const matches = line.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}/g);
+          if (matches && matches.length >= 3) {
+            dateTitles.push(...matches);
+            break;
+          }
+        }
+      }
+      
+      // 如果没有找到日期标题，使用默认日期
+      if (dateTitles.length === 0) {
+        const today = new Date();
+        for (let i = 0; i < 3; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() + i);
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          dateTitles.push(`${monthNames[date.getMonth()]} ${date.getDate()}`);
+        }
+      }
+
+      // 解析NOAA文本表格
+      for (const line of lines) {
+        const trimLine = line.trim();
+        
+        // 识别表格开始（包含时段标识）
+        if (trimLine.includes('00-03UT') || trimLine.includes('03-06UT')) inTable = true;
+        if (!inTable || !trimLine) continue;
+        
+        // 匹配时段和KP值（格式：时段 第一天KP 第二天KP 第三天KP）
+        const match = trimLine.match(/(\d{2}-\d{2}UT)\s+([\d.]+)(?:\s*\(G\d\))?\s+([\d.]+)(?:\s*\(G\d\))?\s+([\d.]+)(?:\s*\(G\d\))?/);
+        if (!match) continue;
+
+        const [_, utcTime, day1Kp, day2Kp, day3Kp] = match;
+        // 处理3天的时段数据（dayOffset：0=第一天，1=第二天，2=第三天）
+        [0, 1, 2].forEach(dayOffset => {
+          const { beijingDate, beijingTime } = convertUtcToBeijing(utcTime, dayOffset, dateTitles);
+          const kp = parseFloat([day1Kp, day2Kp, day3Kp][dayOffset]);
+          const periodType = getPeriodType(beijingTime); // 白天/夜间
+          const timestamp = getPeriodTimestamp(beijingDate, beijingTime); // 时间戳（用于排序）
+          const [periodStart, periodEnd] = getPeriodTimeRange(beijingDate, beijingTime); // 时段起止时间戳
+
+          periods.push({
+            beijingDate: beijingDate, // 北京日期（如"10月15日"）
+            beijingTime: beijingTime, // 北京时间段（如"08-11时"）
+            kp: kp,
+            periodType: periodType, // "day"或"night"
+            timestamp: timestamp, // 时段开始时间戳
+            periodStart: periodStart, // 时段开始时间戳（用于判断当前时段）
+            periodEnd: periodEnd, // 时段结束时间戳
+            isHighActivity: kp >= 5, // 是否高活性（KP≥5，显示提示）
+            nakedEyeVisible: kp >= 7 && periodType === 'night' // 是否肉眼可见（KP≥7且夜间）
+          });
+        });
+      }
+
+      // 按时间戳排序（从早到晚）
+      return periods.sort((a, b) => a.timestamp - b.timestamp);
+    }
+
+    // UTC时间转换为北京时间
+    function convertUtcToBeijing(utcTime, dayOffset, dateTitles) {
+      const [utcStart, utcEnd] = utcTime.replace('UT', '').split('-').map(Number);
+      
+      // 获取UTC日期
+      const utcDateStr = dateTitles[dayOffset];
+      
+      // 解析UTC日期
+      const [monthStr, day] = utcDateStr.split(' ');
+      const monthMap = {
+        'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+        'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+      };
+      
+      const year = new Date().getFullYear();
+      const month = monthMap[monthStr];
+      const utcDay = parseInt(day);
+      
+      // 计算北京时间的开始和结束小时
+      let bjStartHour = (utcStart + 8) % 24;
+      let bjEndHour = (utcEnd + 8) % 24;
+      
+      // 计算北京日期
+      const bjDate = new Date(year, month, utcDay);
+      if (utcStart + 8 >= 24) {
+        bjDate.setDate(bjDate.getDate() + 1);
+      }
+      
+      // 格式化北京日期
+      const bjDateStr = `${bjDate.getMonth() + 1}月${bjDate.getDate()}日`;
+      // 格式化北京时段
+      const bjTimeStr = `${String(bjStartHour).padStart(2, '0')}-${String(bjEndHour).padStart(2, '0')}时`;
+
+      return { 
+        beijingDate: bjDateStr,
+        beijingTime: bjTimeStr
+      };
+    }
+
+    // 判断时段类型（白天：7:00-16:00，夜间：其他）
+    function getPeriodType(beijingTime) {
+      const startHour = parseInt(beijingTime.split('-')[0]);
+      return (startHour >= 7 && startHour < 16) ? 'day' : 'night';
+    }
+
+    // 获取时段时间戳（用于排序）
+    function getPeriodTimestamp(beijingDate, beijingTime) {
+      const [month, day] = beijingDate.match(/(\d+)月(\d+)日/).slice(1).map(Number);
+      const startHour = parseInt(beijingTime.split('-')[0]);
+      const year = new Date().getFullYear();
+      return new Date(year, month - 1, day, startHour).getTime();
+    }
+
+    // 获取时段起止时间戳（用于判断当前时段）
+    function getPeriodTimeRange(beijingDate, beijingTime) {
+      const [month, day] = beijingDate.match(/(\d+)月(\d+)日/).slice(1).map(Number);
+      const [startHour, endHour] = beijingTime.split('-').map(h => parseInt(h.replace('时', '')));
+      const year = new Date().getFullYear();
+      
+      const periodStart = new Date(year, month - 1, day, startHour).getTime();
+      // 处理跨天时段（如"21-00时"→结束时间为次日0点）
+      const periodEnd = endHour < startHour 
+        ? new Date(year, month - 1, day + 1, endHour).getTime()
+        : new Date(year, month - 1, day, endHour).getTime();
+
+      return [periodStart, periodEnd];
+    }
+
+    // 获取KP柱状图颜色类
+    function getKpBarColorClass(kp) {
+      if (kp >= 7) return 'kp-bar-7-9';
+      if (kp >= 6) return 'kp-bar-6';
+      if (kp >= 4) return 'kp-bar-4-5';
+      return 'kp-bar-0-3';
+    }
+
+    // 获取KP值文本颜色类
+    function getKpTextColorClass(kp) {
+      if (kp >= 6) return 'kp-text-high';
+      if (kp >= 4) return 'kp-text-medium';
+      return 'kp-text-low';
+    }
+
+    // 获取KP值观测建议
+    function getKpSuggestion(kp) {
+      if (kp >= 7) {
+        return { text: '肉眼可见', class: 'kp-text-high' };
+      } else if (kp >= 6) {
+        return { text: '隐约可见', class: 'kp-text-high' };
+      } else if (kp >= 4) {
+        return { text: '拍摄可见', class: 'kp-text-medium' };
+      } else {
+        return { text: '弱活动', class: 'kp-text-low' };
+      }
+    }
+
+    // 渲染每日最大KP概览
+    function renderDailyMaxOverview() {
+      const overviewContainer = document.getElementById('daily-max-overview');
+      overviewContainer.innerHTML = '';
+      
+      if (allPeriodsData.length === 0) return;
+      
+      // 按日期分组
+      const dailyData = {};
+      allPeriodsData.forEach(period => {
+        if (!dailyData[period.beijingDate]) {
+          dailyData[period.beijingDate] = [];
+        }
+        dailyData[period.beijingDate].push(period);
+      });
+      
+      // 计算每日最大KP值
+      const dailyMax = [];
+      Object.keys(dailyData).forEach(date => {
+        const maxKp = Math.max(...dailyData[date].map(p => p.kp));
+        dailyMax.push({ date, maxKp });
+      });
+      
+      // 渲染每日概览卡片
+      dailyMax.forEach((day, index) => {
+        const card = document.createElement('div');
+        card.className = 'glass-effect rounded-xl p-3 text-center daily-card';
+        card.dataset.date = day.date;
+        
+        // 根据KP值确定观测建议
+        const suggestion = getKpSuggestion(day.maxKp);
+        
+        card.innerHTML = `
+          <div class="text-white font-bold text-shadow mb-2">${day.date}</div>
+          <div class="text-2xl font-bold text-shadow mb-2 ${suggestion.class}">KP ${day.maxKp.toFixed(1)}</div>
+          <div class="text-xs ${suggestion.class}">${suggestion.text}</div>
+        `;
+        
+        // 添加点击事件
+        card.addEventListener('click', function() {
+          scrollToDatePeriods(day.date);
+        });
+        
+        overviewContainer.appendChild(card);
+      });
+    }
+
+    // 滚动到指定日期的时段
+    function scrollToDatePeriods(targetDate) {
+      const rows = document.querySelectorAll('.time-slot');
+      let found = false;
+      
+      rows.forEach((row, index) => {
+        const dateCell = row.querySelector('.compact-date');
+        if (dateCell && dateCell.textContent === targetDate) {
+          if (!found) {
+            // 滚动到第一个匹配的日期
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            found = true;
+            
+            // 添加临时高亮效果
+            row.style.backgroundColor = 'rgba(255, 215, 0, 0.2)';
+            setTimeout(() => {
+              row.style.backgroundColor = '';
+            }, 2000);
+          }
+        }
+      });
+      
+      if (!found) {
+        // 如果没有找到，滚动到顶部
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    // 渲染所有时段表格
+    function renderAllPeriodsTable() {
+      const tableBody = document.querySelector('#all-periods-table tbody');
+      tableBody.innerHTML = '';
+
+      if (allPeriodsData.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="3" class="text-center text-gray-400 py-6">暂无时段数据</td></tr>`;
+        return;
+      }
+
+      // 遍历渲染每个时段
+      allPeriodsData.forEach(period => {
+        const row = document.createElement('tr');
+        row.className = `time-slot ${period.periodType === 'day' ? 'daytime' : ''}`;
+        // 存储时段起止时间（用于后续高亮）
+        row.dataset.periodStart = period.periodStart;
+        row.dataset.periodEnd = period.periodEnd;
+
+        // 1. 北京时间列 - 紧凑显示
+        const dateTimeCell = document.createElement('td');
+        const periodIcon = period.periodType === 'day' ? '☀️' : '🌙';
+        dateTimeCell.className = `${period.periodType === 'day' ? 'daytime-label' : 'nighttime-label'}`;
+        dateTimeCell.innerHTML = `
+          <div class="compact-date font-medium">${period.beijingDate}</div>
+          <div class="compact-time text-sm opacity-90">${period.beijingTime} ${periodIcon}</div>
+        `;
+        row.appendChild(dateTimeCell);
+
+        // 2. 提示图标列（高活性提示）- 居中显示
+        const tipCell = document.createElement('td');
+        if (period.isHighActivity) {
+          tipCell.className = 'tooltip';
+          // 提示图标
+          const tipIcon = document.createElement('span');
+          tipIcon.className = 'inline-block text-aurora-orange warning-tooltip';
+          tipIcon.innerHTML = '<i class="fa fa-exclamation-triangle"></i>';
+          
+          // 提示内容
+          const tipText = document.createElement('span');
+          tipText.className = 'tooltip-text';
+          
+          const suggestion = getKpSuggestion(period.kp);
+          
+          tipText.innerHTML = `
+            <strong>高活性时段（KP=${period.kp}）</strong><br>
+            • 观测建议：${period.periodType === 'night' ? 
+              suggestion.text : 
+              '白天不可见'}</br>
+            • 可见区域：${period.kp >= 6 ? '中高纬度地区' : '北方高纬度地区'}<br>
+            • 建议准备：三脚架（长曝光拍摄）
+          `;
+          
+          tipCell.appendChild(tipIcon);
+          tipCell.appendChild(tipText);
+        }
+        row.appendChild(tipCell);
+
+        // 3. KP值强度列 - 给柱状图更多空间
+        const kpCell = document.createElement('td');
+        
+        const kpContainer = document.createElement('div');
+        kpContainer.className = 'flex flex-col space-y-2';
+        
+        // KP柱状图
+        const barContainer = document.createElement('div');
+        barContainer.className = 'kp-bar-container';
+        
+        const kpBar = document.createElement('div');
+        kpBar.className = `kp-bar ${getKpBarColorClass(period.kp)}`;
+        // KP值范围0-9，动态计算宽度，确保小数值也有足够显示空间
+        const barWidth = Math.max((period.kp / 9) * 100, 15); // 最小15%宽度
+        kpBar.style.width = `${barWidth}%`;
+        
+        const kpValueText = document.createElement('div');
+        kpValueText.className = 'kp-value-text';
+        kpValueText.textContent = `KP ${period.kp}`;
+        
+        kpBar.appendChild(kpValueText);
+        barContainer.appendChild(kpBar);
+        
+        // 观测建议
+        const suggestion = getKpSuggestion(period.kp);
+        const suggestionText = document.createElement('div');
+        suggestionText.className = `text-xs text-center ${suggestion.class} font-medium`;
+        suggestionText.textContent = suggestion.text;
+        
+        kpContainer.appendChild(barContainer);
+        kpContainer.appendChild(suggestionText);
+        
+        // 只有KP≥7且夜间才显示肉眼可见标签
+        if (period.nakedEyeVisible) {
+          const nakedEyeLabel = document.createElement('div');
+          nakedEyeLabel.className = 'text-center';
+          const nakedEyeSpan = document.createElement('span');
+          nakedEyeSpan.className = 'naked-eye';
+          nakedEyeSpan.textContent = '肉眼可见';
+          nakedEyeLabel.appendChild(nakedEyeSpan);
+          kpContainer.appendChild(nakedEyeLabel);
+        }
+        
+        kpCell.appendChild(kpContainer);
+        row.appendChild(kpCell);
+
+        tableBody.appendChild(row);
+      });
+
+      // 初始高亮当前时段并滚动到视图
+      highlightCurrentPeriod();
+    }
+
+    // 高亮当前时段
+    function highlightCurrentPeriod() {
+      const now = new Date().getTime();
+      const allRows = document.querySelectorAll('.time-slot');
+      
+      allRows.forEach(row => {
+        const periodStart = parseInt(row.dataset.periodStart);
+        const periodEnd = parseInt(row.dataset.periodEnd);
+        
+        if (!isNaN(periodStart) && !isNaN(periodEnd)) {
+          row.classList.toggle('current-period', now >= periodStart && now < periodEnd);
+        }
+      });
+    }
+
+    // 渲染错误状态
+    function renderErrorState() {
+      const tableBody = document.querySelector('#all-periods-table tbody');
+      tableBody.innerHTML = `<tr><td colspan="3" class="text-center text-gray-400 py-6">数据获取失败，正在重试...</td></tr>`;
+      
+      const overviewContainer = document.getElementById('daily-max-overview');
+      overviewContainer.innerHTML = '<div class="col-span-3 text-center text-gray-400 py-4">数据获取失败</div>';
+    }
+  </script>
+</body>
+</html>
