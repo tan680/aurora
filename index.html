@@ -908,7 +908,7 @@
         
         if (AppState.forecastTime !== "--") {
             const timeText = AppState.dataCredible && AppState.shootingTime !== "--" 
-                ? `${AppState.forecastTime}分钟后(${AppState.shootingTime}分)极光预报`
+                ? `${AppState.forecastTime}分钟后(${AppState.shootingTime}数据参考`
                 : `${AppState.forecastTime}分钟后极光预报`;
             
             DomRefs.forecastTitle.textContent = timeText;
