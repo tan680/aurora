@@ -368,7 +368,7 @@
     </div>
 
     <div class="text-center text-gray-400 text-xs mt-4 pb-4">
-      <div>公众号:极光预报-小红书：艾探索追极光 © 2025</div>
+      <div>公众号:极光预报|小红书:艾探索-极光预报 © 2025</div>
     </div>
   </div>
 
@@ -744,7 +744,7 @@
                 if (cloudMatch) {
                     const cloudValue = parseInt(cloudMatch[0]);
                     if (cloudValue > 50) {
-                        paramsText += " ⚠️北边云量" + cloudValue + "%，可能影响观测";
+                        paramsText += " ⚠️北边云量" + cloudValue + "%，可能严重影响观测！（天气数据可能存在误差，请确认实际状态）";
                     } else if (cloudValue > 30) {
                         paramsText += " ⚠️注意北边云量变化";
                     }
@@ -908,8 +908,8 @@
         
         if (AppState.forecastTime !== "--") {
             const timeText = AppState.dataCredible && AppState.shootingTime !== "--" 
-                ? `${AppState.forecastTime}分钟后(${AppState.shootingTime}数据参考`
-                : `${AppState.forecastTime}分钟后参考`;
+                ? `${AppState.forecastTime}分钟后(${AppState.shootingTime}预报`
+                : `${AppState.forecastTime}分钟后状态:`;
             
             DomRefs.forecastTitle.textContent = timeText;
             
@@ -937,7 +937,7 @@
         let textColor = "text-white";
         
         if (!AppState.dataCredible) {
-            text = "❌ 预报通知：国内空间天气平静，无足够强度的太阳风驱动极光产生！因此当前拍摄到的带色彩的夜空画面，以气辉为主 —— 科普：气辉本就是高层大气 '默默发光' 的常态现象。";
+            text = "❌ 预警信息：未来几十分钟国内空间天气平静，无足够强度的太阳风驱动极光产生！因此当前拍摄到的带色彩的夜空画面，以气辉为主 —— 科普：气辉本就是高层大气 '默默发光' 的常态现象。";
             textColor = "text-gray-400";
         } else if (AppState.globalProb >= AuroraConfig.thresholds.probability.high) {
             text = `🔥 极光强预警：综合概率${AppState.globalProb}%，建议${AppState.shootingTime}时在光污染等级≤2级地区观测`;
@@ -949,7 +949,7 @@
             text = `📷 极光观测提示：综合概率${AppState.globalProb}%，${AppState.shootingTime}时可在暗空环境尝试拍摄`;
             textColor = "text-aurora-green";
         } else {
-            text = "当前无极光预警信息";
+            text = "当前无稳定极光预警信息";
             textColor = "text-gray-300";
         }
         
