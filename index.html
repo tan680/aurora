@@ -57,6 +57,9 @@
       .breathing {
         animation: breathing 3s infinite;
       }
+      .scroll-pulse {
+        animation: scroll-pulse 2s infinite;
+      }
      
       @keyframes pulse {
         0% { opacity: 1; }
@@ -82,6 +85,11 @@
         0% { opacity: 0.3; }
         50% { opacity: 1; }
         100% { opacity: 0.3; }
+      }
+      @keyframes scroll-pulse {
+        0% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+        100% { transform: translateY(0); }
       }
     }
   </style>
@@ -116,6 +124,15 @@
       </div>
     </div>
 
+    <!-- 引导下滑提示 -->
+    <div id="scroll-hint" class="glass-effect rounded-xl p-3 mb-4 text-center hidden">
+      <div class="text-white text-base font-bold text-shadow-heavy">
+        <i class="fa fa-arrow-down text-aurora-green mr-2 scroll-pulse"></i>
+        下滑查看各地区详细拍摄教程
+        <i class="fa fa-arrow-down text-aurora-green ml-2 scroll-pulse"></i>
+      </div>
+    </div>
+
     <div class="glass-effect rounded-2xl p-4 mb-4">
       <div class="flex items-center justify-center mb-3">
         <i class="fa fa-bolt text-aurora-green mr-2" id="wind-speed-icon"></i>
@@ -143,6 +160,25 @@
       </div>
     </div>
 
+    <!-- 新增预报跳转区域 -->
+    <div class="glass-effect rounded-2xl p-4 mb-4">
+      <div class="text-white font-bold text-shadow-heavy mb-3">更多预报信息</div>
+      <div class="grid grid-cols-3 gap-3">
+        <a href="https://services.swpc.noaa.gov/products/ace-real-time-solar-wind" target="_blank" class="text-center p-3 bg-aurora-blue/20 rounded-lg hover:bg-aurora-blue/40 transition-colors">
+          <i class="fa fa-satellite text-aurora-blue text-lg mb-1"></i>
+          <div class="text-white text-xs font-bold">ACE实时数据</div>
+        </a>
+        <a href="https://www.swpc.noaa.gov/products/3-day-forecast" target="_blank" class="text-center p-3 bg-aurora-green/20 rounded-lg hover:bg-aurora-green/40 transition-colors">
+          <i class="fa fa-calendar text-aurora-green text-lg mb-1"></i>
+          <div class="text-white text-xs font-bold">三天预报</div>
+        </a>
+        <a href="https://www.swpc.noaa.gov/products/27-day-outlook-10-7-cm-flux-and-geomagnetic-indices" target="_blank" class="text-center p-3 bg-aurora-purple/20 rounded-lg hover:bg-aurora-purple/40 transition-colors">
+          <i class="fa fa-chart-line text-aurora-purple text-lg mb-1"></i>
+          <div class="text-white text-xs font-bold">27天预报</div>
+        </a>
+      </div>
+    </div>
+
     <div class="glass-effect rounded-2xl p-4 mb-4">
       <div class="flex items-center justify-between mb-3">
         <div class="text-white font-bold text-shadow-heavy">实时监控画面</div>
@@ -152,7 +188,7 @@
         </div>
       </div>
       <div class="relative bg-black rounded-xl overflow-hidden">
-        <div id="live-camera" class="aspect-video bg-cover bg-center bg-no-repeat flex items-center justify-center" style="background-image: url('https://pics.starvisor.net/galleries/orig/cap_bag.jpg?t=1760452287964')">
+        <div id="live-camera" class="aspect-video bg-cover bg-center bg-no-repeat flex items-center justify-center">
           <div id="camera-placeholder" class="absolute inset-0 bg-gradient-to-br from-purple-900 to-blue-800 flex items-center justify-center">
             <div class="text-center text-white">
               <i class="fa fa-video-camera text-4xl mb-2 opacity-50"></i>
@@ -162,6 +198,7 @@
         </div>
       </div>
     </div>
+    
     <div class="mb-4">
       <div class="flex items-center justify-between mb-3">
         <div class="text-white font-bold text-shadow-heavy">观测地点预报</div>
@@ -177,6 +214,9 @@
             <div class="grid grid-cols-2 gap-2 text-white text-sm">
               <div id="arctic-cloud">云量: --%</div>
               <div id="arctic-temp">温度: --°C</div>
+            </div>
+            <div id="arctic-visibility" class="text-white text-sm mt-2 hidden">
+              <i class="fa fa-eye mr-1"></i><span>--</span>
             </div>
           </div>
           <div id="arctic-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
@@ -195,7 +235,10 @@
               <div id="mangui-cloud">云量: --%</div>
               <div id="mangui-temp">温度: --°C</div>
             </div>
-          </div
+            <div id="mangui-visibility" class="text-white text-sm mt-2 hidden">
+              <i class="fa fa-eye mr-1"></i><span>--</span>
+            </div>
+          </div>
           <div id="mangui-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
             <div class="text-white text-sm font-bold mb-1">拍摄参数:</div>
             <div class="text-white text-xs" id="mangui-params">等待数据...</div>
@@ -211,6 +254,9 @@
             <div class="grid grid-cols-2 gap-2 text-white text-sm">
               <div id="genhe-cloud">云量: --%</div>
               <div id="genhe-temp">温度: --°C</div>
+            </div>
+            <div id="genhe-visibility" class="text-white text-sm mt-2 hidden">
+              <i class="fa fa-eye mr-1"></i><span>--</span>
             </div>
           </div>
           <div id="genhe-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
@@ -229,6 +275,9 @@
               <div id="eerguna-cloud">云量: --%</div>
               <div id="eerguna-temp">温度: --°C</div>
             </div>
+            <div id="eerguna-visibility" class="text-white text-sm mt-2 hidden">
+              <i class="fa fa-eye mr-1"></i><span>--</span>
+            </div>
           </div>
           <div id="eerguna-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
             <div class="text-white text-sm font-bold mb-1">拍摄参数:</div>
@@ -245,6 +294,9 @@
             <div class="grid grid-cols-2 gap-2 text-white text-sm">
               <div id="heihe-cloud">云量: --%</div>
               <div id="heihe-temp">温度: --°C</div>
+            </div>
+            <div id="heihe-visibility" class="text-white text-sm mt-2 hidden">
+              <i class="fa fa-eye mr-1"></i><span>--</span>
             </div>
           </div>
           <div id="heihe-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
@@ -263,6 +315,9 @@
               <div id="hegu-cloud">云量: --%</div>
               <div id="hegu-temp">温度: --°C</div>
             </div>
+            <div id="hegu-visibility" class="text-white text-sm mt-2 hidden">
+              <i class="fa fa-eye mr-1"></i><span>--</span>
+            </div>
           </div>
           <div id="hegu-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
             <div class="text-white text-sm font-bold mb-1">拍摄参数:</div>
@@ -280,6 +335,9 @@
               <div id="hailar-cloud">云量: --%</div>
               <div id="hailar-temp">温度: --°C</div>
             </div>
+            <div id="hailar-visibility" class="text-white text-sm mt-2 hidden">
+              <i class="fa fa-eye mr-1"></i><span>--</span>
+            </div>
           </div>
           <div id="hailar-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
             <div class="text-white text-sm font-bold mb-1">拍摄参数:</div>
@@ -296,6 +354,9 @@
             <div class="grid grid-cols-2 gap-2 text-white text-sm">
               <div id="zalantun-cloud">云量: --%</div>
               <div id="zalantun-temp">温度: --°C</div>
+            </div>
+            <div id="zalantun-visibility" class="text-white text-sm mt-2 hidden">
+              <i class="fa fa-eye mr-1"></i><span>--</span>
             </div>
           </div>
           <div id="zalantun-shooting-tips" class="bg-aurora-green/20 p-3 border-t border-white/10 hidden">
@@ -439,23 +500,15 @@
                 min: 20,
                 credible: 25
             },
-            bz: {
-                min: -5,
-                credible: -10
-            },
-            density: {
-                min: 2,
-                credible: 3
-            },
-            bt: {
-                min: 3,
-                credible: 4
+            visibility: {
+                nakedEye: 70 // 大于70%概率在光污染<2级地区肉眼可见
             }
         },
         
-        liveCameraUrl: "https://pics.starvisor.net/galleries/orig/cap_bag.jpg?t=1760452287964",
+        liveCameraBaseUrl: "https://pics.starvisor.net/galleries/orig/cap_bag.jpg",
         auroraRefresh: 2 * 60 * 1000,
-        weatherRefresh: 10 * 60 * 1000
+        weatherRefresh: 10 * 60 * 1000,
+        cameraRefresh: 60 * 1000 // 图片每1分钟刷新一次
     };
 
     const AppState = {
@@ -470,7 +523,8 @@
         dataStatus: "正在连接...",
         dataCredible: true,
         shootingTime: "--",
-        weatherCache: {}
+        weatherCache: {},
+        hasActiveAurora: false
     };
 
     const DomRefs = {
@@ -487,6 +541,7 @@
         dataStatus: document.getElementById('data-status'),
         liveCamera: document.getElementById('live-camera'),
         cameraPlaceholder: document.getElementById('camera-placeholder'),
+        scrollHint: document.getElementById('scroll-hint'),
         cities: {
             arctic: {
                 container: document.getElementById('city-arctic'),
@@ -494,7 +549,8 @@
                 cloud: document.getElementById('arctic-cloud'),
                 temp: document.getElementById('arctic-temp'),
                 tips: document.getElementById('arctic-shooting-tips'),
-                params: document.getElementById('arctic-params')
+                params: document.getElementById('arctic-params'),
+                visibility: document.getElementById('arctic-visibility')
             },
             mangui: {
                 container: document.getElementById('city-mangui'),
@@ -502,7 +558,8 @@
                 cloud: document.getElementById('mangui-cloud'),
                 temp: document.getElementById('mangui-temp'),
                 tips: document.getElementById('mangui-shooting-tips'),
-                params: document.getElementById('mangui-params')
+                params: document.getElementById('mangui-params'),
+                visibility: document.getElementById('mangui-visibility')
             },
             genhe: {
                 container: document.getElementById('city-genhe'),
@@ -510,7 +567,8 @@
                 cloud: document.getElementById('genhe-cloud'),
                 temp: document.getElementById('genhe-temp'),
                 tips: document.getElementById('genhe-shooting-tips'),
-                params: document.getElementById('genhe-params')
+                params: document.getElementById('genhe-params'),
+                visibility: document.getElementById('genhe-visibility')
             },
             eerguna: {
                 container: document.getElementById('city-eerguna'),
@@ -518,7 +576,8 @@
                 cloud: document.getElementById('eerguna-cloud'),
                 temp: document.getElementById('eerguna-temp'),
                 tips: document.getElementById('eerguna-shooting-tips'),
-                params: document.getElementById('eerguna-params')
+                params: document.getElementById('eerguna-params'),
+                visibility: document.getElementById('eerguna-visibility')
             },
             heihe: {
                 container: document.getElementById('city-heihe'),
@@ -526,7 +585,8 @@
                 cloud: document.getElementById('heihe-cloud'),
                 temp: document.getElementById('heihe-temp'),
                 tips: document.getElementById('heihe-shooting-tips'),
-                params: document.getElementById('heihe-params')
+                params: document.getElementById('heihe-params'),
+                visibility: document.getElementById('heihe-visibility')
             },
             hegu: {
                 container: document.getElementById('city-hegu'),
@@ -534,7 +594,8 @@
                 cloud: document.getElementById('hegu-cloud'),
                 temp: document.getElementById('hegu-temp'),
                 tips: document.getElementById('hegu-shooting-tips'),
-                params: document.getElementById('hegu-params')
+                params: document.getElementById('hegu-params'),
+                visibility: document.getElementById('hegu-visibility')
             },
             hailar: {
                 container: document.getElementById('city-hailar'),
@@ -542,7 +603,8 @@
                 cloud: document.getElementById('hailar-cloud'),
                 temp: document.getElementById('hailar-temp'),
                 tips: document.getElementById('hailar-shooting-tips'),
-                params: document.getElementById('hailar-params')
+                params: document.getElementById('hailar-params'),
+                visibility: document.getElementById('hailar-visibility')
             },
             zalantun: {
                 container: document.getElementById('city-zalantun'),
@@ -550,7 +612,8 @@
                 cloud: document.getElementById('zalantun-cloud'),
                 temp: document.getElementById('zalantun-temp'),
                 tips: document.getElementById('zalantun-shooting-tips'),
-                params: document.getElementById('zalantun-params')
+                params: document.getElementById('zalantun-params'),
+                visibility: document.getElementById('zalantun-visibility')
             }
         }
     };
@@ -602,28 +665,34 @@
     }
 
     function checkCameraImage() {
+        // 使用当前时间戳生成新的URL，避免缓存
+        const timestamp = new Date().getTime();
+        const cameraUrl = `${AuroraConfig.liveCameraBaseUrl}?t=${timestamp}`;
+        
+        // 创建新的Image对象来预加载图片
         const img = new Image();
         img.onload = function() {
+            // 图片加载成功，更新背景图片并隐藏占位符
+            DomRefs.liveCamera.style.backgroundImage = `url('${cameraUrl}')`;
             if (DomRefs.cameraPlaceholder) {
                 DomRefs.cameraPlaceholder.style.display = 'none';
             }
         };
         img.onerror = function() {
+            // 图片加载失败，显示占位符
             if (DomRefs.cameraPlaceholder) {
                 DomRefs.cameraPlaceholder.style.display = 'flex';
             }
         };
-        img.src = AuroraConfig.liveCameraUrl + '?' + new Date().getTime();
+        img.src = cameraUrl;
     }
 
     function isDataValid() {
         const t = AuroraConfig.thresholds;
         
+        // 只保留太阳风速和HPI强度的判断
         if (AppState.solarWind < t.windSpeed.min) return false;
         if (AppState.hpiPower < t.hpi.min) return false;
-        if (AppState.bzDirection > t.bz.min) return false;
-        if (AppState.solarDensity < t.density.min) return false;
-        if (parseFloat(AppState.kpIndex) < t.bt.min) return false;
         
         return true;
     }
@@ -712,7 +781,7 @@
 
         if (bz < -15) probability += 30;
         else if (bz < -10) probability += 20;
-        else if (bz < t.bz.credible) probability += 10;
+        else if (bz < -5) probability += 10;
 
         if (wind >= 750) probability += 20;
         else if (wind >= 600) probability += 15;
@@ -721,7 +790,7 @@
 
         if (density >= 10) probability += 5;
         else if (density >= 5) probability += 3;
-        else if (density >= t.density.credible) probability += 2;
+        else if (density >= 2) probability += 2;
         else probability += Math.min(1, density);
 
         if (duration >= 60) probability += 15;
@@ -734,11 +803,46 @@
         return Math.min(95, Math.max(0, probability));
     }
 
+    function updateVisibilityTips() {
+        for (const [key, loc] of Object.entries(AuroraConfig.locations)) {
+            const city = DomRefs.cities[key];
+            if (!city || !city.visibility) continue;
+            
+            const actualProb = AppState.dataCredible ? calcAuroraProb(
+                AppState.hpiPower || 0,
+                AppState.bzDirection || 0,
+                AppState.solarWind || 0,
+                AppState.solarDensity || 0,
+                loc.factor
+            ) : 0;
+            
+            if (!AppState.dataCredible || actualProb < AuroraConfig.thresholds.probability.low) {
+                city.visibility.classList.add('hidden');
+            } else {
+                city.visibility.classList.remove('hidden');
+                
+                let visibilityText = "";
+                let visibilityColor = "text-gray-300";
+                
+                if (actualProb >= AuroraConfig.thresholds.visibility.nakedEye) {
+                    visibilityText = "在光污染<2级地区肉眼可见";
+                    visibilityColor = "text-aurora-green";
+                } else {
+                    visibilityText = "需要长时间曝光拍摄";
+                    visibilityColor = "text-aurora-orange";
+                }
+                
+                city.visibility.innerHTML = `<i class="fa fa-eye mr-1"></i><span class="${visibilityColor}">${visibilityText}</span>`;
+            }
+        }
+    }
+
     function updateAllProbabilities() {
         if (AppState.kpIndex === "--") return;
         
         AppState.dataCredible = isDataValid();
         AppState.shootingTime = calcShootTime();
+        AppState.hasActiveAurora = false;
         
         for (const [key, loc] of Object.entries(AuroraConfig.locations)) {
             const actualProb = AppState.dataCredible ? calcAuroraProb(
@@ -759,6 +863,7 @@
                 probText = "概率: 可能微弱极光";
             } else {
                 probText = `概率: ${Math.round(actualProb)}%`;
+                AppState.hasActiveAurora = true;
             }
             
             city.prob.textContent = probText;
@@ -817,6 +922,14 @@
         
         updateAlertText();
         updateCameraTips();
+        updateVisibilityTips();
+        
+        // 显示或隐藏下滑提示
+        if (AppState.hasActiveAurora) {
+            DomRefs.scrollHint.classList.remove('hidden');
+        } else {
+            DomRefs.scrollHint.classList.add('hidden');
+        }
     }
 
     function updateAlertText() {
@@ -1039,6 +1152,7 @@
         setInterval(getAuroraData, AuroraConfig.auroraRefresh);
         setInterval(getWeatherData, AuroraConfig.weatherRefresh);
         setInterval(updateTime, 1000);
+        setInterval(checkCameraImage, AuroraConfig.cameraRefresh);
         
         console.log("极光观测系统已启动");
     }
@@ -1046,3 +1160,5 @@
     document.addEventListener('DOMContentLoaded', startApp);
 })();
 </script>
+</body>
+</html>
