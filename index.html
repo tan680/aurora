@@ -863,9 +863,9 @@
             
             let probText;
             if (!AppState.dataCredible) {
-                probText = "概率: 无极光";
+                probText = "概率: 无";
             } else if (actualProb < AuroraConfig.thresholds.probability.low) {
-                probText = "概率: 概率低";
+                probText = "概率: 低";
             } else {
                 probText = `概率: ${Math.round(actualProb)}%`;
                 AppState.hasActiveAurora = true;
