@@ -161,23 +161,23 @@
     </div>
     
     <!-- 预报跳转区域 -->
-<div class="glass-effect rounded-2xl p-4 mb-4">
-  <div class="text-white font-bold text-shadow-heavy mb-3">更多预报信息</div>
-  <div class="grid grid-cols-3 gap-3">
-    <a href="ace.html" class="text-center p-3 bg-aurora-blue/20 rounded-lg hover:bg-aurora-blue/40 transition-colors">
-      <i class="fa fa-satellite text-aurora-blue text-lg mb-1"></i>
-      <div class="text-white text-xs font-bold">ACE实时数据</div>
-    </a>
-    <a href="forecast.html" class="text-center p-3 bg-aurora-green/20 rounded-lg hover:bg-aurora-green/40 transition-colors">
-      <i class="fa fa-calendar text-aurora-green text-lg mb-1"></i>
-      <div class="text-white text-xs font-bold">三天预报</div>
-    </a>
-    <a href="27day.html" class="text-center p-3 bg-aurora-purple/20 rounded-lg hover:bg-aurora-purple/40 transition-colors">
-      <i class="fa fa-chart-line text-aurora-purple text-lg mb-1"></i>
-      <div class="text-white text-xs font-bold">27天预报</div>
-    </a>
-  </div>
-</div>
+    <div class="glass-effect rounded-2xl p-4 mb-4">
+      <div class="text-white font-bold text-shadow-heavy mb-3">更多预报信息</div>
+      <div class="grid grid-cols-3 gap-3">
+        <a href="ace.html" class="text-center p-3 bg-aurora-blue/20 rounded-lg hover:bg-aurora-blue/40 transition-colors">
+          <i class="fa fa-satellite text-aurora-blue text-lg mb-1"></i>
+          <div class="text-white text-xs font-bold">ACE实时数据</div>
+        </a>
+        <a href="forecast.html" class="text-center p-3 bg-aurora-green/20 rounded-lg hover:bg-aurora-green/40 transition-colors">
+          <i class="fa fa-calendar text-aurora-green text-lg mb-1"></i>
+          <div class="text-white text-xs font-bold">三天预报</div>
+        </a>
+        <a href="27day.html" class="text-center p-3 bg-aurora-purple/20 rounded-lg hover:bg-aurora-purple/40 transition-colors">
+          <i class="fa fa-chart-line text-aurora-purple text-lg mb-1"></i>
+          <div class="text-white text-xs font-bold">27天预报</div>
+        </a>
+      </div>
+    </div>
 
     <div class="glass-effect rounded-2xl p-4 mb-4">
       <div class="flex items-center justify-between mb-3">
@@ -373,7 +373,6 @@
   </div>
 
   <script>
-
 (function() {
     'use strict';
     
@@ -690,9 +689,14 @@
     function isDataValid() {
         const t = AuroraConfig.thresholds;
         
-        // 只保留太阳风速和HPI强度的判断
+        // 基本数据有效性检查
         if (AppState.solarWind < t.windSpeed.min) return false;
         if (AppState.hpiPower < t.hpi.min) return false;
+        
+        // Bz正向时的特殊处理 - 如果Bz过正，即使其他条件好也认为效果不佳
+        if (AppState.bzDirection > 10) {
+            return false; // Bz过正，极光发生条件很差
+        }
         
         return true;
     }
@@ -767,6 +771,7 @@
         DomRefs.datetime.innerHTML = `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
     }
 
+    // 核心改进：包含Bz正向惩罚的极光概率计算
     function calcAuroraProb(hpi, bz, wind, density, locationFactor) {
         if (!isDataValid()) return 0;
         
@@ -774,31 +779,63 @@
         const t = AuroraConfig.thresholds;
         const duration = AppState.forecastTime || 30;
 
+        // HPI贡献
         if (hpi >= 90) probability += 35;
         else if (hpi >= 70) probability += 25;
         else if (hpi >= 50) probability += 15;
         else if (hpi >= t.hpi.credible) probability += 10;
 
-        if (bz < -15) probability += 30;
-        else if (bz < -10) probability += 20;
-        else if (bz < -5) probability += 10;
+        // Bz分量影响 - 关键改进：包含正向惩罚机制
+        if (bz < -15) {
+            probability += 30; // 强负向，最大加分
+        } else if (bz < -10) {
+            probability += 20;
+        } else if (bz < -5) {
+            probability += 10;
+        } else if (bz < 0) {
+            probability += 5;
+        } else {
+            // Bz为正时的惩罚逻辑 - 核心改进
+            let penaltyRate = 0;
+            if (bz > 5) penaltyRate = 0.7;     // 强正向，惩罚70%
+            else if (bz > 3) penaltyRate = 0.5; // 中等正向，惩罚50%
+            else if (bz > 1) penaltyRate = 0.3;  // 轻微正向，惩罚30%
+            else penaltyRate = 0.15;             // 弱正向，惩罚15%
+            
+            // 如果HPI已经很低，适当减轻Bz惩罚
+            if (hpi < 30) {
+                penaltyRate *= 0.7; // 减轻30%的Bz惩罚
+            }
+            
+            // 应用惩罚：当前概率乘以(1-惩罚率)
+            probability = probability * (1 - penaltyRate);
+        }
 
+        // 太阳风速贡献
         if (wind >= 750) probability += 20;
         else if (wind >= 600) probability += 15;
         else if (wind >= 500) probability += 10;
         else if (wind >= t.windSpeed.credible) probability += 5;
 
+        // 粒子密度贡献
         if (density >= 10) probability += 5;
         else if (density >= 5) probability += 3;
         else if (density >= 2) probability += 2;
         else probability += Math.min(1, density);
 
+        // 持续时间贡献
         if (duration >= 60) probability += 15;
         else if (duration >= 45) probability += 10;
         else if (duration >= 30) probability += 7;
         else if (duration >= 15) probability += 3;
 
-        // 新增：HPI小于30时概率减半
+        // 数据质量检查 - 新增功能
+        if (wind < 300 || density < 1) {
+            // 数据质量较差时，概率上限限制
+            probability = Math.min(probability, 40);
+        }
+
+        // HPI小于30时概率减半
         if (hpi < 30) {
             probability *= 0.4;
         }
@@ -937,24 +974,57 @@
         }
     }
 
+    // 改进的预警文本，包含Bz状态信息
     function updateAlertText() {
         let text = "";
         let textColor = "text-white";
+        
+        // Bz状态分析
+        let bzStatus = "";
+        let bzImpact = "";
+        if (AppState.bzDirection < -10) {
+            bzStatus = "强南向";
+            bzImpact = "极有利";
+        } else if (AppState.bzDirection < -5) {
+            bzStatus = "南向";
+            bzImpact = "有利";
+        } else if (AppState.bzDirection < 0) {
+            bzStatus = "弱南向";
+            bzImpact = "稍有利";
+        } else if (AppState.bzDirection < 5) {
+            bzStatus = "弱北向";
+            bzImpact = "不利";
+        } else if (AppState.bzDirection < 10) {
+            bzStatus = "北向";
+            bzImpact = "很不利";
+        } else {
+            bzStatus = "强北向";
+            bzImpact = "极不利";
+        }
         
         if (!AppState.dataCredible) {
             text = "❌ 预警通知：未来几十分钟后无足够强度的太阳风驱动极光在国内产生！因此摄到带色彩的夜空画面，以气辉为主 —— 科普：气辉本就是高层大气 '默默发光' 的常态现象。";
             textColor = "text-gray-400";
         } else if (AppState.globalProb >= AuroraConfig.thresholds.probability.high) {
-            text = `🔥 极光强预警：综合概率${AppState.globalProb}%，建议${AppState.shootingTime}时在光污染等级≤2级地区观测`;
+            text = `🔥 极光强预警：综合概率${AppState.globalProb}%，Bz${bzStatus}(${bzImpact})，建议${AppState.shootingTime}时在光污染等级≤2级地区观测`;
             textColor = "text-aurora-red";
         } else if (AppState.globalProb >= AuroraConfig.thresholds.probability.medium) {
-            text = `⚠️ 极光预警：综合概率${AppState.globalProb}%，建议${AppState.shootingTime}时在暗空环境尝试拍摄`;
+            text = `⚠️ 极光预警：综合概率${AppState.globalProb}%，Bz${bzStatus}(${bzImpact})，建议${AppState.shootingTime}时在暗空环境尝试拍摄`;
             textColor = "text-aurora-orange";
         } else if (AppState.globalProb >= AuroraConfig.thresholds.probability.low) {
-            text = `📷 极光观测提示：综合概率${AppState.globalProb}%，${AppState.shootingTime}时可在暗空环境尝试拍摄`;
+            text = `📷 极光观测提示：综合概率${AppState.globalProb}%，Bz${bzStatus}(${bzImpact})，${AppState.shootingTime}时可在暗空环境尝试拍摄`;
             textColor = "text-aurora-green";
         } else {
-            text = "当前无稳定极光预警信息";
+            // 当概率低时，显示具体原因
+            let reason = "太阳风条件不足";
+            if (AppState.bzDirection > 5) {
+                reason = `Bz北向抑制极光(惩罚${AppState.bzDirection > 15 ? '70%' : AppState.bzDirection > 10 ? '50%' : '30%'})`;
+            } else if (AppState.solarWind < 350) {
+                reason = "太阳风速过低";
+            } else if (AppState.hpiPower < 30) {
+                reason = "HPI指数不足";
+            }
+            text = `当前无稳定极光预警信息 (${reason})`;
             textColor = "text-gray-300";
         }
         
@@ -1164,6 +1234,6 @@
 
     document.addEventListener('DOMContentLoaded', startApp);
 })();
-</script>
+  </script>
 </body>
 </html>
