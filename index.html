@@ -1018,11 +1018,11 @@
             // 当概率低时，显示具体原因
             let reason = "太阳风条件不足";
             if (AppState.bzDirection > 5) {
-                reason = `Bz北向抑制极光(惩罚${AppState.bzDirection > 15 ? '70%' : AppState.bzDirection > 10 ? '50%' : '30%'})`;
+                reason = `拍摄色彩正在减弱${AppState.bzDirection > 15 ? '70%' : AppState.bzDirection > 10 ? '50%' : '30%'}`;
             } else if (AppState.solarWind < 350) {
                 reason = "太阳风速过低";
             } else if (AppState.hpiPower < 30) {
-                reason = "HPI指数不足";
+                reason = "可能出现微弱活动，但不稳定，相对难拍摄。";
             }
             text = `当前无稳定极光预警信息 (${reason})`;
             textColor = "text-gray-300";
