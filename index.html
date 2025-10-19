@@ -837,7 +837,7 @@
 
         // HPI小于30时概率减半
         if (hpi < 30) {
-            probability *= 0.4;
+            probability *= 0.6;
         }
 
         probability *= locationFactor;
@@ -902,7 +902,7 @@
             if (!AppState.dataCredible) {
                 probText = "概率: 无";
             } else if (actualProb < AuroraConfig.thresholds.probability.low) {
-                probText = "概率: 低";
+                probText = "概率: 微弱";
             } else {
                 probText = `概率: ${Math.round(actualProb)}%`;
                 AppState.hasActiveAurora = true;
