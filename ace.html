@@ -1,12 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AuroraWatch - 极光数据</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.2.0"></script>
+  <title>艾探索-极光预报</title>
+  <meta name="description" content="极光实时预报服务已升级">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   
@@ -30,1283 +28,210 @@
     }
   </script>
   
-  <style>
-    /* 保持原有样式不变 */
-    :root {
-      --primary: #4096ff;
-      --secondary: #722ed1;
-      --dark: #141414;
-      --darker: #0a0e14;
-      --light: #f1f2f6;
-      --card-bg: rgba(255, 255, 255, 0.1);
-      --border-color: rgba(255, 255, 255, 0.15);
-    }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: linear-gradient(to bottom right, #111827, #1e3a8a);
-      background-attachment: fixed;
-      color: var(--light);
-      line-height: 1.6;
-      padding: 0;
-      min-height: 100vh;
-    }
-    
-    .glass-effect {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-    
-    .text-shadow {
-      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-    }
-    
-    .text-shadow-heavy {
-      text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.7);
-    }
-    
-    .live-pulse {
-      animation: pulse 4s infinite;
-    }
-    
-    .warning-pulse {
-      animation: warning 4s infinite;
-    }
-    
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.6; }
-      100% { opacity: 1; }
-    }
-    
-    @keyframes warning {
-      0% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(1.05); }
-      100% { opacity: 1; transform: scale(1); }
-    }
-    
-    header {
-      background: rgba(20, 20, 20, 0.9);
-      backdrop-filter: blur(10px);
-      padding: 1rem 15px;
-      border-bottom: 1px solid var(--border-color);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    
-    .header-content {
-      max-width: 600px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    h1 {
-      color: var(--primary);
-      font-size: 1.4rem;
-      font-weight: 600;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-    }
-    
-    .current-time {
-      color: var(--light);
-      font-size: 0.9rem;
-      opacity: 0.8;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.7);
-    }
-    
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 15px;
-    }
-    
-    .dashboard {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      margin-top: 10px;
-    }
-    
-    .card {
-      background: var(--card-bg);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 15px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      transition: all 0.3s ease;
-    }
-    
-    .card:hover {
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-      transform: translateY(-2px);
-    }
-    
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border-color);
-    }
-    
-    .card-title {
-      color: var(--primary);
-      font-size: 1.1rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.7);
-    }
-    
-    .card-icon {
-      font-size: 1.2rem;
-      opacity: 0.7;
-    }
-    
-    .data-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 15px;
-    }
-    
-    .data-item {
-      display: flex;
-      flex-direction: column;
-      padding: 12px;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .data-label {
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 0.8rem;
-      margin-bottom: 5px;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-    }
-    
-    .data-value {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: white;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.7);
-    }
-    
-    .chart-container {
-      position: relative;
-      height: 200px;
-      width: 100%;
-      margin-top: 12px;
-    }
-    
-    .alert-card {
-      border-left: 4px solid var(--primary);
-    }
-    
-    .alert-card.high-alert {
-      border-left-color: #fa8c16;
-      animation: warning 2s infinite;
-    }
-    
-    .alert-card.extreme-alert {
-      border-left-color: #f5222d;
-      animation: warning 1s infinite;
-    }
-    
-    .alert-content {
-      font-size: 0.9rem;
-      line-height: 1.5;
-      padding: 12px;
-      background: rgba(64, 150, 255, 0.1);
-      border-radius: 8px;
-      margin-top: 10px;
-      border: 1px solid rgba(64, 150, 255, 0.2);
-    }
-    
-    .alert-content strong {
-      color: var(--primary);
-    }
-    
-    .location-selector {
-      margin-top: 10px;
-    }
-    
-    select {
-      width: 100%;
-      padding: 10px;
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid var(--primary);
-      color: var(--light);
-      border-radius: 8px;
-      font-size: 0.85rem;
-    }
-    
-    .error-message {
-      color: #f5222d;
-      font-size: 0.8rem;
-      margin-top: 8px;
-      padding: 8px;
-      background: rgba(245, 34, 45, 0.1);
-      border-radius: 6px;
-      border: 1px solid rgba(245, 34, 45, 0.3);
-    }
-    
-    .data-status {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 12px;
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.6);
-    }
-    
-    .navigation {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-    
-    .nav-item {
-      text-align: center;
-      padding: 12px;
-      background: rgba(64, 150, 255, 0.2);
-      border-radius: 8px;
-      transition: all 0.3s ease;
-      border: 1px solid rgba(64, 150, 255, 0.3);
-    }
-    
-    .nav-item:hover {
-      background: rgba(64, 150, 255, 0.4);
-      transform: translateY(-2px);
-    }
-    
-    .nav-icon {
-      font-size: 1.2rem;
-      margin-bottom: 5px;
-    }
-    
-    .nav-text {
-      color: white;
-      font-size: 0.8rem;
-      font-weight: 600;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-    }
-    
-    a {
-      text-decoration: none;
-      color: inherit;
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      }
+      .text-shadow-heavy {
+        text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.7);
+      }
+      .glass-effect {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+      .pulse-glow {
+        animation: pulse-glow 2s infinite;
+      }
+      .float-animation {
+        animation: float 3s ease-in-out infinite;
+      }
+     
+      @keyframes pulse-glow {
+        0% { box-shadow: 0 0 10px rgba(64, 150, 255, 0.5); }
+        50% { box-shadow: 0 0 20px rgba(64, 150, 255, 0.8); }
+        100% { box-shadow: 0 0 10px rgba(64, 150, 255, 0.5); }
+      }
+      
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+      }
     }
   </style>
 </head>
-<body>
-  <header class="glass-effect">
-    <div class="header-content">
-      <h1>艾探索-ACE数据</h1>
-      <div class="current-time" id="current-time"></div>
-    </div>
-  </header>
-  
-  <div class="container">
-    <!-- 导航区域 -->
-    <div class="navigation">
-      <a href="index.html" class="nav-item">
-        <div class="nav-icon text-aurora-blue">
-          <i class="fa fa-home"></i>
-        </div>
-        <div class="nav-text">首页</div>
-      </a>
-      <a href="forecast.html" class="nav-item">
-        <div class="nav-icon text-aurora-green">
-          <i class="fa fa-calendar"></i>
-        </div>
-        <div class="nav-text">三天预报</div>
-      </a>
-      <a href="27day.html" class="nav-item">
-        <div class="nav-icon text-aurora-purple">
-          <i class="fa fa-chart-line"></i>
-        </div>
-        <div class="nav-text">27天预报</div>
-      </a>
-    </div>
+<body class="bg-transparent overflow-x-hidden">
+  <div class="min-h-screen bg-gradient-to-br from-gray-900 to-blue-900 p-4 flex items-center justify-center">
 
-    <!-- 太阳风与最新数据合并区域 -->
-    <div class="card alert-card">
-      <div class="card-header">
-        <div class="card-title">
-          <span class="weather-icon">🌌</span>
-          空间天气数据
+    <div class="glass-effect rounded-2xl p-8 max-w-md w-full text-center">
+      <!-- 品牌标识 -->
+      <div class="flex items-center justify-center mb-6">
+        <div class="w-16 h-16 bg-gradient-to-r from-aurora-blue to-aurora-purple rounded-full flex items-center justify-center mr-3 pulse-glow">
+          <i class="fa fa-bolt text-white text-2xl"></i>
         </div>
-        <div class="card-icon live-pulse">🔄</div>
-      </div>
-      
-      <div class="data-grid">
-        <div class="data-item">
-          <span class="data-label">太阳风速</span>
-          <span class="data-value" id="speed">-- km/s</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">粒子密度</span>
-          <span class="data-value" id="density">-- /cm³</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">Bz分量</span>
-          <span class="data-value" id="bz">-- nT</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">Bt分量</span>
-          <span class="data-value" id="bt">-- nT</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">温度</span>
-          <span class="data-value" id="temperature">-- K</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">HPI指数 (北)</span>
-          <span class="data-value" id="hpi-north">-- GW</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">HPI指数 (南)</span>
-          <span class="data-value" id="hpi-south">-- GW</span>
+        <div>
+          <div class="text-white font-bold text-xl text-shadow">艾探索-极光预报</div>
+          <div class="text-aurora-green text-sm text-shadow-heavy">服务升级通知</div>
         </div>
       </div>
-      
-      <div class="alert-content" id="alert-content">
-        数据加载中，请稍候...
-      </div>
-      
-      <div class="data-status">
-        <span id="data-update-time">最后更新: --</span>
-        <span id="data-source-status">数据源状态: 加载中...</span>
-      </div>
-      
-      <div class="error-message" id="error-message"></div>
-    </div>
-    
-    <div class="dashboard">      
-      <!-- 到达时间预测卡片 -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="weather-icon">⏱️</span>
-            太阳风到达时间
+
+      <!-- 主要内容 -->
+      <div class="mb-6">
+        <div class="text-white text-lg font-bold mb-4 text-shadow-heavy">
+          <i class="fa fa-exclamation-triangle text-aurora-orange mr-2"></i>
+          网页版服务已升级
+        </div>
+        
+        <div class="text-gray-300 text-sm mb-6 leading-relaxed">
+          为了提供更准确、更及时的极光预报服务，我们已经将全部功能迁移至微信公众号平台。
+          请关注公众号获取最新的极光预报数据、实时监控和拍摄建议。
+        </div>
+
+        <!-- 二维码区域 -->
+        <div class="bg-white/10 rounded-xl p-4 mb-6 float-animation">
+          <div class="text-white text-sm font-bold mb-3 text-shadow-heavy">
+            <i class="fa fa-qrcode text-aurora-green mr-2"></i>
+            扫码关注公众号
           </div>
-          <div class="card-icon">🚀</div>
-        </div>
-        <div class="data-item">
-          <span class="data-label">选择距离</span>
-          <select id="location">
-            <option value="1500000">地球轨道 (150万km)</option>
-            <option value="384400">月球距离 (38.4万km)</option>
-            <option value="100000">近地空间 (10万km)</option>
-          </select>
-        </div>
-        <div class="data-item" style="margin-top: 10px;">
-          <span class="data-label">预计到达时间</span>
-          <span class="data-value" id="arrival-time">--</span>
-        </div>
-        <div class="chart-container">
-          <canvas id="arrivalChart"></canvas>
-        </div>
-      </div>
-      
-      <!-- HPI指数图表卡片 -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="weather-icon">📊</span>
-            HPI指数 (北半球)
+          <div class="bg-white p-3 rounded-lg inline-block">
+            <!-- 二维码图片 - 替换 WEIXIN_QRCODE 为你的实际文件URL -->
+            <img src="WEIXIN_QRCODE" alt="极光预报公众号二维码" class="w-48 h-48 rounded">
           </div>
-          <div class="card-icon">⚡</div>
+          <div class="text-aurora-blue font-bold mt-3 text-shadow-heavy">极光预报</div>
         </div>
-        <div class="chart-container">
-          <canvas id="hpiNorthChart"></canvas>
-        </div>
-      </div>
-      
-      <!-- HPI南半球图表卡片 -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="weather-icon">📊</span>
-            HPI指数 (南半球)
+
+        <!-- 公众号信息 -->
+        <div class="glass-effect rounded-xl p-4 mb-4">
+          <div class="text-white font-bold mb-2 text-shadow-heavy">
+            <i class="fa fa-weixin text-aurora-green mr-2"></i>
+            公众号信息
           </div>
-          <div class="card-icon">⚡</div>
+          <div class="text-aurora-blue text-lg font-bold">极光预报</div>
+          <div class="text-gray-300 text-xs mt-1">微信搜索"极光预报"或扫码关注</div>
         </div>
-        <div class="chart-container">
-          <canvas id="hpiSouthChart"></canvas>
-        </div>
-      </div>
-      
-      <!-- 太阳风速度图表卡片 -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="weather-icon">💨</span>
-            太阳风速度 (2小时数据)
+
+        <!-- 功能特色 -->
+        <div class="glass-effect rounded-xl p-4">
+          <div class="text-white font-bold mb-3 text-shadow-heavy">
+            <i class="fa fa-star text-aurora-orange mr-2"></i>
+            公众号特色功能
           </div>
-          <div class="card-icon">🌪️</div>
-        </div>
-        <div class="chart-container">
-          <canvas id="solarWindChart"></canvas>
-        </div>
-      </div>
-      
-      <!-- 粒子密度图表卡片 -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="weather-icon">🔬</span>
-            粒子密度 (2小时数据)
+          <div class="space-y-2 text-left">
+            <div class="flex items-center text-gray-300 text-sm">
+              <i class="fa fa-check text-aurora-green mr-2 text-xs"></i>
+              实时极光KP指数监控
+            </div>
+            <div class="flex items-center text-gray-300 text-sm">
+              <i class="fa fa-check text-aurora-green mr-2 text-xs"></i>
+              全国观测地点预报
+            </div>
+            <div class="flex items-center text-gray-300 text-sm">
+              <i class="fa fa-check text-aurora-green mr-2 text-xs"></i>
+              专业拍摄参数建议
+            </div>
+            <div class="flex items-center text-gray-300 text-sm">
+              <i class="fa fa-check text-aurora-green mr-2 text-xs"></i>
+              实时监控画面更新
+            </div>
+            <div class="flex items-center text-gray-300 text-sm">
+              <i class="fa fa-check text-aurora-green mr-2 text-xs"></i>
+              三天及27天长期预报
+            </div>
           </div>
-          <div class="card-icon">🔍</div>
-        </div>
-        <div class="chart-container">
-          <canvas id="densityChart"></canvas>
         </div>
       </div>
-      
-      <!-- 温度图表卡片 -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="weather-icon">🌡️</span>
-            太阳风温度 (2小时数据)
+
+      <!-- 操作指引 -->
+      <div class="glass-effect rounded-xl p-4 mb-6">
+        <div class="text-white font-bold mb-3 text-shadow-heavy">
+          <i class="fa fa-info-circle text-aurora-blue mr-2"></i>
+          操作指引
+        </div>
+        <div class="space-y-3">
+          <div class="flex items-start text-gray-300 text-sm">
+            <span class="bg-aurora-blue text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 flex-shrink-0">1</span>
+            <span>微信搜索"极光预报"或扫描上方二维码</span>
           </div>
-          <div class="card-icon">🔥</div>
-        </div>
-        <div class="chart-container">
-          <canvas id="temperatureChart"></canvas>
-        </div>
-      </div>
-      
-      <!-- Bx分量图表卡片 -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="weather-icon">🧲</span>
-            Bx分量变化 (2小时数据)
+          <div class="flex items-start text-gray-300 text-sm">
+            <span class="bg-aurora-green text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 flex-shrink-0">2</span>
+            <span>关注公众号并进入主页面</span>
           </div>
-          <div class="card-icon">🧭</div>
-        </div>
-        <div class="chart-container">
-          <canvas id="bxChart"></canvas>
-        </div>
-      </div>
-      
-      <!-- By分量图表卡片 -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="weather-icon">🧲</span>
-            By分量变化 (2小时数据)
+          <div class="flex items-start text-gray-300 text-sm">
+            <span class="bg-aurora-purple text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2 flex-shrink-0">3</span>
+            <span>点击菜单栏获取最新极光预报数据</span>
           </div>
-          <div class="card-icon">🧭</div>
-        </div>
-        <div class="chart-container">
-          <canvas id="byChart"></canvas>
         </div>
       </div>
-      
-      <!-- Bz分量图表卡片 -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="weather-icon">🧲</span>
-            Bz分量变化 (2小时数据)
-          </div>
-          <div class="card-icon">🧭</div>
-        </div>
-        <div class="chart-container">
-          <canvas id="bzChart"></canvas>
-        </div>
+
+      <!-- 倒计时重定向 -->
+      <div class="text-center text-gray-400 text-xs mb-4">
+        页面将在 <span id="countdown">15</span> 秒后自动关闭
       </div>
-      
-      <!-- Bt分量图表卡片 -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="weather-icon">🧲</span>
-            Bt分量变化 (2小时数据)
-          </div>
-          <div class="card-icon">🧭</div>
-        </div>
-        <div class="chart-container">
-          <canvas id="btChart"></canvas>
-        </div>
-      </div>
+
+      <!-- 手动关闭按钮 -->
+      <button onclick="closePage()" class="w-full bg-aurora-red/20 hover:bg-aurora-red/40 text-white py-3 rounded-xl transition-colors font-bold text-shadow-heavy">
+        <i class="fa fa-times mr-2"></i>关闭页面
+      </button>
     </div>
   </div>
 
+  <div class="text-center text-gray-400 text-xs mt-4 pb-4 fixed bottom-0 w-full">
+    <div>公众号:极光预报 | 小红书:艾探索-极光预报 © 2025</div>
+  </div>
+
   <script>
-    // 图表实例
-    let solarWindChart, densityChart, temperatureChart, bxChart, byChart, bzChart, btChart;
-    let hpiNorthChart, hpiSouthChart, arrivalChart;
+    // 倒计时功能
+    let countdown = 15;
+    const countdownElement = document.getElementById('countdown');
     
-    let currentData = {
-      speed: 0,
-      density: 0,
-      temperature: 0,
-      bx: 0,
-      by: 0,
-      bz: 0,
-      bt: 0,
-      hpiNorth: 0,
-      hpiSouth: 0,
-      stationCount: 0
-    };
-    
-    let solarWindData = [];
-    let arrivalData = [];
-    let solarWindDelay = 0; // 太阳风传播延迟（分钟）
-    const DSCOVR_DISTANCE = 1500000; // DSCOVR卫星距离地球约150万公里
-    const distanceSelect = document.getElementById('location');
-
-    // 初始化
-    document.addEventListener('DOMContentLoaded', () => {
-      initCharts();
-      updateClock();
-      setInterval(updateClock, 1000);
-      updateData();
-      setInterval(updateData, 300000); // 每5分钟更新数据
+    const countdownInterval = setInterval(() => {
+      countdown--;
+      countdownElement.textContent = countdown;
       
-      // 距离选择变化时更新
-      distanceSelect.addEventListener('change', updateArrivalChart);
-    });
-
-    // 带超时的fetch请求
-    function fetchWithTimeout(url, timeout = 5000) {
-      return Promise.race([
-        fetch(url),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('请求超时')), timeout)
-        )
-      ]);
-    }
-
-    // 解析JSON响应并处理错误
-    async function parseJSONResponse(response) {
-      try {
-        return await response.json();
-      } catch (error) {
-        throw new Error('JSON解析失败');
+      if (countdown <= 0) {
+        clearInterval(countdownInterval);
+        closePage();
       }
-    }
+    }, 1000);
 
-    // 【修复后的HPI数据解析函数】
-    // 处理格式为"YYYY-MM-DD_HH:MM"的时间字段
-    function parseHpiData(text) {
-      const lines = text.split('\n');
-      const data = [];
-      let validDataCount = 0;
-      
-      console.log('HPI数据行数:', lines.length);
-      
-      for (const line of lines) {
-        // 跳过注释行和空行
-        if (line.startsWith('#') || line.trim() === '') continue;
-        
-        const parts = line.trim().split(/\s+/);
-        
-        // 确保有足够的字段（观测时间、预报时间、北半球值、南半球值）
-        if (parts.length >= 4) {
-          try {
-            // 处理观测时间（格式：YYYY-MM-DD_HH:MM）
-            const obsTimeStr = parts[0];
-            // 将下划线替换为T，补全秒数，转为ISO格式的UTC时间
-            const isoTime = obsTimeStr.replace('_', 'T') + ':00Z';
-            
-            // 验证日期有效性
-            const dateObj = new Date(isoTime);
-            if (isNaN(dateObj.getTime())) {
-              console.warn('HPI日期解析失败:', isoTime);
-              continue;
-            }
-            
-            // 提取南北半球HPI指数
-            const northVal = parseFloat(parts[2]);
-            const southVal = parseFloat(parts[3]);
-            
-            // 验证数据有效性
-            if (isNaN(northVal) || isNaN(southVal)) {
-              console.warn('HPI数值解析失败:', parts);
-              continue;
-            }
-            
-            data.push({
-              dateTime: isoTime,
-              north: northVal,
-              south: southVal
-            });
-            
-            validDataCount++;
-            
-          } catch (error) {
-            console.warn('HPI数据行解析异常:', line, error);
-            continue;
-          }
-        } else {
-          console.warn('HPI数据格式异常，字段不足:', parts);
-        }
-      }
-      
-      console.log(`HPI有效数据点: ${validDataCount}/${lines.length}`);
-      return data;
-    }
-
-    // 更新到达时间图表
-    function updateArrivalChart() {
-      const distance = parseInt(distanceSelect.value);
-      arrivalData = [];
-      
-      // 计算不同时间点的到达时间
-      solarWindData.forEach(item => {
-        if (item.y > 0) {
-          const timeMinutes = Math.round((distance / item.y) / 60);
-          arrivalData.push({
-            x: item.x,
-            y: timeMinutes
-          });
-        }
-      });
-      
-      // 更新到达时间图表
-      arrivalChart.data.datasets[0].data = arrivalData;
-      arrivalChart.update('none');
-      
-      // 更新预计到达时间显示
-      if (solarWindData.length > 0 && currentData.speed > 0) {
-        const timeMinutes = Math.round((distance / currentData.speed) / 60);
-        const arrivalTime = new Date();
-        arrivalTime.setMinutes(arrivalTime.getMinutes() + timeMinutes);
-        
-        document.getElementById('arrival-time').textContent = 
-          `${timeMinutes} 分钟后 (${arrivalTime.toLocaleTimeString('zh-CN', {hour12: false})})`;
+    // 关闭页面函数
+    function closePage() {
+      // 如果是微信浏览器，直接关闭
+      if (typeof WeixinJSBridge !== "undefined") {
+        WeixinJSBridge.invoke('closeWindow', {}, function(res) {});
       } else {
-        document.getElementById('arrival-time').textContent = '--';
-      }
-    }
-
-    // 计算极光可见性
-    function calculateAuroraVisibility() {
-      let alertText = '';
-      const alertCard = document.querySelector('.alert-card');
-      
-      // 清除之前的警报类
-      alertCard.classList.remove('high-alert', 'extreme-alert');
-      
-      // 根据HPI指数判断极光活动强度
-      if (currentData.hpiNorth > 500 || currentData.hpiSouth > 500) {
-        alertText = `<strong>强极光活动!</strong> 南北半球均检测到高强度极光活动，高纬度地区极易观测到极光。`;
-        alertCard.classList.add('extreme-alert');
-      } else if (currentData.hpiNorth > 200 || currentData.hpiSouth > 200) {
-        alertText = `<strong>中等极光活动</strong> 南北半球存在显著极光活动，高纬度地区有较大机会观测到极光。`;
-        alertCard.classList.add('high-alert');
-      } else if (currentData.hpiNorth > 50 || currentData.hpiSouth > 50) {
-        alertText = `<strong>弱极光活动</strong> 南北半球存在较弱极光活动，仅在高纬度地区可能观测到。`;
-      } else {
-        alertText = `<strong>平静</strong> 当前极光活动较弱，观测机会较低。`;
-      }
-      
-      // 添加磁场信息
-      if (currentData.bz < -10) {
-        alertText += `<br>地球磁场Bz分量为强南向（${currentData.bz} nT），有利于极光活动增强。`;
-      } else if (currentData.bz < 0) {
-        alertText += `<br>地球磁场Bz分量为南向（${currentData.bz} nT），可能增强极光活动。`;
-      }
-      
-      document.getElementById('alert-content').innerHTML = alertText;
-    }
-
-    // 初始化图表
-    function initCharts() {
-      const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            mode: 'index',
-            intersect: false,
-            callbacks: {
-              title: function(context) {
-                // 显示本地时间（北京本地时间）
-                const date = new Date(context[0].parsed.x);
-                return date.toLocaleString('zh-CN', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false
-                });
-              },
-              label: function(context) {
-                return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}`;
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            type: 'time',
-            time: {
-              unit: 'hour',
-              displayFormats: { hour: 'HH:mm' },
-              tooltipFormat: 'MM-dd HH:mm'
-            },
-            grid: { color: 'rgba(255,255,255,0.05)' },
-            ticks: { 
-              color: 'rgba(255,255,255,0.7)', 
-              maxRotation: 0, 
-              font: { size: 10 },
-              callback: function(value) {
-                // 显示北京本地时间
-                const date = new Date(value);
-                return date.toLocaleTimeString('zh-CN', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false
-                });
-              }
-            }
-          },
-          y: {
-            grid: { color: 'rgba(255,255,255,0.05)' },
-            ticks: { color: 'rgba(255,255,255,0.7)', font: { size: 10 } },
-            beginAtZero: false
-          }
-        },
-        elements: {
-          point: { radius: 0 }
-        },
-        interaction: {
-          intersect: false,
-          mode: 'index'
-        }
-      };
-
-      // 太阳风速度图表
-      const solarWindCtx = document.getElementById('solarWindChart').getContext('2d');
-      solarWindChart = new Chart(solarWindCtx, {
-        type: 'line',
-        data: { datasets: [{
-          label: '太阳风速 (km/s)',
-          data: [],
-          borderColor: '#4096ff',
-          backgroundColor: 'rgba(64, 150, 255, 0.1)',
-          borderWidth: 2,
-          tension: 0.1,
-          fill: true
-        }] },
-        options: chartOptions
-      });
-
-      // 粒子密度图表
-      const densityCtx = document.getElementById('densityChart').getContext('2d');
-      densityChart = new Chart(densityCtx, {
-        type: 'line',
-        data: { datasets: [{
-          label: '粒子密度 (/cm³)',
-          data: [],
-          borderColor: '#52c41a',
-          backgroundColor: 'rgba(82, 196, 26, 0.1)',
-          borderWidth: 2,
-          tension: 0.1,
-          fill: true
-        }] },
-        options: chartOptions
-      });
-
-      // 温度图表
-      const temperatureCtx = document.getElementById('temperatureChart').getContext('2d');
-      temperatureChart = new Chart(temperatureCtx, {
-        type: 'line',
-        data: { datasets: [{
-          label: '温度 (K)',
-          data: [],
-          borderColor: '#fa8c16',
-          backgroundColor: 'rgba(250, 140, 22, 0.1)',
-          borderWidth: 2,
-          tension: 0.1,
-          fill: true
-        }] },
-        options: chartOptions
-      });
-
-      // Bx分量图表
-      const bxCtx = document.getElementById('bxChart').getContext('2d');
-      bxChart = new Chart(bxCtx, {
-        type: 'line',
-        data: { datasets: [{
-          label: 'Bx分量 (nT)',
-          data: [],
-          borderColor: '#f5222d',
-          backgroundColor: 'rgba(245, 34, 45, 0.1)',
-          borderWidth: 2,
-          tension: 0.1,
-          fill: true
-        }] },
-        options: chartOptions
-      });
-
-      // By分量图表
-      const byCtx = document.getElementById('byChart').getContext('2d');
-      byChart = new Chart(byCtx, {
-        type: 'line',
-        data: { datasets: [{
-          label: 'By分量 (nT)',
-          data: [],
-          borderColor: '#722ed1',
-          backgroundColor: 'rgba(114, 46, 209, 0.1)',
-          borderWidth: 2,
-          tension: 0.1,
-          fill: true
-        }] },
-        options: chartOptions
-      });
-
-      // Bz分量图表
-      const bzCtx = document.getElementById('bzChart').getContext('2d');
-      bzChart = new Chart(bzCtx, {
-        type: 'line',
-        data: { datasets: [{
-          label: 'Bz分量 (nT)',
-          data: [],
-          borderColor: '#ff4d4f',
-          backgroundColor: 'rgba(255, 77, 79, 0.1)',
-          borderWidth: 2,
-          tension: 0.1,
-          fill: true
-        }] },
-        options: chartOptions
-      });
-
-      // Bt分量图表
-      const btCtx = document.getElementById('btChart').getContext('2d');
-      btChart = new Chart(btCtx, {
-        type: 'line',
-        data: { datasets: [{
-          label: 'Bt分量 (nT)',
-          data: [],
-          borderColor: '#6c5ce7',
-          backgroundColor: 'rgba(108, 92, 231, 0.1)',
-          borderWidth: 2,
-          tension: 0.1,
-          fill: true
-        }] },
-        options: chartOptions
-      });
-
-      // HPI北半球图表
-      const hpiNorthCtx = document.getElementById('hpiNorthChart').getContext('2d');
-      hpiNorthChart = new Chart(hpiNorthCtx, {
-        type: 'line',
-        data: { datasets: [{
-          label: 'HPI北半球 (GW)',
-          data: [],
-          borderColor: '#a29bfe',
-          backgroundColor: 'rgba(162, 155, 254, 0.1)',
-          borderWidth: 2,
-          tension: 0.1,
-          fill: true
-        }] },
-        options: chartOptions
-      });
-
-      // HPI南半球图表
-      const hpiSouthCtx = document.getElementById('hpiSouthChart').getContext('2d');
-      hpiSouthChart = new Chart(hpiSouthCtx, {
-        type: 'line',
-        data: { datasets: [{
-          label: 'HPI南半球 (GW)',
-          data: [],
-          borderColor: '#00b894',
-          backgroundColor: 'rgba(0, 184, 148, 0.1)',
-          borderWidth: 2,
-          tension: 0.1,
-          fill: true
-        }] },
-        options: chartOptions
-      });
-
-      // 到达时间图表
-      const arrivalCtx = document.getElementById('arrivalChart').getContext('2d');
-      arrivalChart = new Chart(arrivalCtx, {
-        type: 'line',
-        data: { datasets: [{
-          label: '预计到达时间 (分钟)',
-          data: [],
-          borderColor: '#00b894',
-          backgroundColor: 'rgba(0, 184, 148, 0.1)',
-          borderWidth: 2,
-          tension: 0.1,
-          fill: true
-        }] },
-        options: chartOptions
-      });
-
-      // 修复后的时间线插件
-      const solarWindDelayedTimeLinePlugin = {
-        id: 'solarWindDelayedTimeLine',
-        afterDraw: function(chart) {
-          // 只在特定图表上显示时间线（排除到达时间图表）
-          if (chart.ctx.canvas.id === 'arrivalChart') {
-            return; // 到达时间图表不显示时间线
-          }
-          
-          const ctx = chart.ctx;
-          const xAxis = chart.scales.x;
-          const yAxis = chart.scales.y;
-          
-          // 获取当前时间（北京本地时间）
-          const now = new Date();
-          const nowTimestamp = now.getTime();
-          
-          // 计算太阳风实际到达地球的时间
-          const arrivalTimestamp = nowTimestamp + solarWindDelay * 60 * 1000;
-          
-          // 绘制当前时间线
-          const currentPosition = xAxis.getPixelForValue(nowTimestamp);
-          if (currentPosition >= xAxis.left && currentPosition <= xAxis.right) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(currentPosition, yAxis.top);
-            ctx.lineTo(currentPosition, yAxis.bottom);
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.setLineDash([5, 3]);
-            ctx.stroke();
-            ctx.restore();
-            
-            // 添加当前时间标签
-            ctx.save();
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.font = 'bold 10px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
-            ctx.fillText('当前', currentPosition, yAxis.top - 18);
-            ctx.restore();
-          }
-
-          // 绘制预计到达时间线（只在太阳风延迟>0时显示）
-          if (solarWindDelay > 0) {
-            const arrivalPosition = xAxis.getPixelForValue(arrivalTimestamp);
-            if (arrivalPosition >= xAxis.left && arrivalPosition <= xAxis.right) {
-              ctx.save();
-              ctx.beginPath();
-              ctx.moveTo(arrivalPosition, yAxis.top);
-              ctx.lineTo(arrivalPosition, yAxis.bottom);
-              ctx.lineWidth = 2;
-              ctx.strokeStyle = 'rgba(64, 150, 255, 0.9)';
-              ctx.setLineDash([3, 3]);
-              ctx.stroke();
-              ctx.restore();
-              
-              // 添加到达时间标签
-              ctx.save();
-              ctx.fillStyle = 'rgba(64, 150, 255, 1)';
-              ctx.font = 'bold 10px Arial';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'bottom';
-              ctx.fillText('预计到达', arrivalPosition, yAxis.bottom + 15);
-              
-              // 添加延迟时间
-              ctx.font = '9px Arial';
-              ctx.fillText(`${solarWindDelay}分钟`, arrivalPosition, yAxis.bottom + 28);
-              ctx.restore();
-            }
-          }
-        }
-      };
-
-      // 为所有图表注册插件
-      Chart.register(solarWindDelayedTimeLinePlugin);
-    }
-
-    // 更新时间（显示北京本地时间）
-    function updateClock() {
-      const now = new Date();
-      document.getElementById('current-time').textContent = now.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      });
-    }
-
-    // 增强的utcToBeijingDate函数
-    function utcToBeijingDate(utcString) {
-      try {
-        let date;
-        
-        if (utcString.includes('T')) {
-          // 已经是ISO格式
-          date = new Date(utcString);
+        // 其他浏览器，尝试关闭窗口或返回上一页
+        if (window.history.length > 1) {
+          window.history.back();
         } else {
-          // 处理NOAA格式 "YYYY-MM-DD HH:MM:SS"
-          const isoString = utcString.replace(' ', 'T') + 'Z';
-          date = new Date(isoString);
+          window.close();
         }
-        
-        // 验证日期有效性
-        if (isNaN(date.getTime())) {
-          console.warn('日期解析失败:', utcString);
-          return new Date(); // 返回当前时间作为fallback
-        }
-        
-        return date;
-      } catch (error) {
-        console.warn('日期转换异常:', utcString, error);
-        return new Date(); // 返回当前时间作为fallback
       }
     }
 
-    // 增强的数据更新函数
-    async function updateData() {
-      try {
-        // 清除错误信息
-        document.getElementById('error-message').textContent = '';
-        
-        // 获取数据
-        const [plasmaRes, magRes, hpiRes] = await Promise.all([
-          fetchWithTimeout('https://services.swpc.noaa.gov/products/solar-wind/plasma-2-hour.json', 5000),
-          fetchWithTimeout('https://services.swpc.noaa.gov/products/solar-wind/mag-2-hour.json', 5000),
-          fetchWithTimeout('https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt', 5000)
-        ]);
-
-        // 检查响应状态
-        if (!plasmaRes.ok || !magRes.ok || !hpiRes.ok) {
-          throw new Error('部分数据接口响应异常');
-        }
-
-        // 解析数据
-        const plasmaData = await parseJSONResponse(plasmaRes);
-        const magData = await parseJSONResponse(magRes);
-        const hpiText = await hpiRes.text();
-
-        // 验证数据完整性
-        if (!Array.isArray(plasmaData) || plasmaData.length === 0 || 
-            !Array.isArray(magData) || magData.length === 0) {
-          throw new Error('太阳风数据格式异常');
-        }
-
-        // 处理太阳风数据 - 完整2小时数据
-        const windData = plasmaData
-          .filter(item => item && item.length >= 3 && !isNaN(parseFloat(item[2])))
-          .map(item => ({
-            x: utcToBeijingDate(item[0]),
-            y: parseFloat(item[2])
-          }));
-
-        // 计算太阳风传播延迟（基于最新风速）
-        if (windData.length > 0) {
-          const latestSpeed = windData[windData.length - 1].y;
-          if (latestSpeed > 0) {
-            // 计算从DSCOVR卫星到地球的传播时间（分钟）
-            solarWindDelay = Math.max(1, Math.round((DSCOVR_DISTANCE / latestSpeed) / 60));
-          } else {
-            solarWindDelay = 0;
-          }
-        } else {
-          solarWindDelay = 0;
-        }
-
-        // 处理粒子密度数据 - 完整2小时数据
-        const densityData = plasmaData
-          .filter(item => item && item.length >= 2 && !isNaN(parseFloat(item[1])))
-          .map(item => ({
-            x: utcToBeijingDate(item[0]),
-            y: parseFloat(item[1])
-          }));
-
-        // 处理温度数据 - 完整2小时数据
-        const temperatureData = plasmaData
-          .filter(item => item && item.length >= 4 && !isNaN(parseFloat(item[3])))
-          .map(item => ({
-            x: utcToBeijingDate(item[0]),
-            y: parseFloat(item[3])
-          }));
-
-        // 处理磁场分量数据 - 完整2小时数据
-        const bxData = magData
-          .filter(item => item && item.length >= 2 && !isNaN(parseFloat(item[1])))
-          .map(item => ({
-            x: utcToBeijingDate(item[0]),
-            y: parseFloat(item[1])
-          }));
-
-        const byData = magData
-          .filter(item => item && item.length >= 3 && !isNaN(parseFloat(item[2])))
-          .map(item => ({
-            x: utcToBeijingDate(item[0]),
-            y: parseFloat(item[2])
-          }));
-
-        const bzData = magData
-          .filter(item => item && item.length >= 4 && !isNaN(parseFloat(item[3])))
-          .map(item => ({
-            x: utcToBeijingDate(item[0]),
-            y: parseFloat(item[3])
-          }));
-
-        const btData = magData
-          .filter(item => item && item.length >= 7 && !isNaN(parseFloat(item[6])))
-          .map(item => ({
-            x: utcToBeijingDate(item[0]),
-            y: parseFloat(item[6])
-          }));
-
-        // 处理HPI数据 - 增强错误处理
-        let hpiData = [];
-        let hpiParseError = null;
-        
-        try {
-          hpiData = parseHpiData(hpiText);
-          if (hpiData.length === 0) {
-            hpiParseError = 'HPI数据解析结果为空';
-          }
-        } catch (e) {
-          hpiParseError = `HPI数据解析异常: ${e.message}`;
-          console.warn('HPI数据解析异常:', e);
-        }
-
-        // 更新当前数据 - 增强HPI数据处理
-        const latestWind = windData.length > 0 ? windData[windData.length - 1] : { y: 0 };
-        const latestDensity = densityData.length > 0 ? densityData[densityData.length - 1] : { y: 0 };
-        const latestTemperature = temperatureData.length > 0 ? temperatureData[temperatureData.length - 1] : { y: 0 };
-        const latestBx = bxData.length > 0 ? bxData[bxData.length - 1] : { y: 0 };
-        const latestBy = byData.length > 0 ? byData[byData.length - 1] : { y: 0 };
-        const latestBz = bzData.length > 0 ? bzData[bzData.length - 1] : { y: 0 };
-        const latestBt = btData.length > 0 ? btData[btData.length - 1] : { y: 0 };
-        
-        // HPI数据处理
-        let latestHpi = { north: 0, south: 0 };
-        if (hpiData.length > 0) {
-          latestHpi = hpiData[hpiData.length - 1];
-        } else if (hpiParseError) {
-          console.warn(hpiParseError);
-        }
-
-        currentData = {
-          speed: latestWind.y || 0,
-          density: latestDensity.y || 0,
-          temperature: latestTemperature.y || 0,
-          bx: latestBx.y || 0,
-          by: latestBy.y || 0,
-          bz: latestBz.y || 0,
-          bt: latestBt.y || 0,
-          hpiNorth: latestHpi.north || 0,
-          hpiSouth: latestHpi.south || 0
+    // 添加图片加载失败处理
+    document.addEventListener('DOMContentLoaded', function() {
+      const qrImage = document.querySelector('img[alt="极光预报公众号二维码"]');
+      if (qrImage) {
+        qrImage.onerror = function() {
+          this.style.display = 'none';
+          // 显示备用文字
+          const fallback = document.createElement('div');
+          fallback.className = 'w-48 h-48 bg-gradient-to-br from-aurora-blue to-aurora-purple rounded flex items-center justify-center text-white';
+          fallback.innerHTML = `
+            <div class="text-center">
+              <i class="fa fa-wechat text-4xl mb-2"></i>
+              <div class="text-xs">公众号二维码</div>
+              <div class="text-xs mt-1">请搜索: 极光预报</div>
+            </div>
+          `;
+          this.parentNode.appendChild(fallback);
         };
-
-        // 更新信息面板
-        document.getElementById('speed').textContent = `${currentData.speed.toFixed(1)} km/s`;
-        document.getElementById('density').textContent = `${currentData.density.toFixed(1)} /cm³`;
-        document.getElementById('temperature').textContent = `${currentData.temperature.toFixed(0)} K`;
-        document.getElementById('bz').textContent = `${currentData.bz.toFixed(2)} nT`;
-        document.getElementById('bt').textContent = `${currentData.bt.toFixed(2)} nT`;
-        
-        // HPI数据显示
-        document.getElementById('hpi-north').textContent = 
-          currentData.hpiNorth > 0 ? `${currentData.hpiNorth.toFixed(2)} GW` : '-- GW';
-        document.getElementById('hpi-south').textContent = 
-          currentData.hpiSouth > 0 ? `${currentData.hpiSouth.toFixed(2)} GW` : '-- GW';
-
-        // 更新数据状态 - 添加HPI状态信息
-        let statusMessage = '数据源状态: 正常';
-        if (hpiParseError) {
-          statusMessage += ` | HPI: 异常`;
-        } else if (hpiData.length === 0) {
-          statusMessage += ` | HPI: 无数据`;
-        } else {
-          statusMessage += ` | HPI: 正常`;
-        }
-        statusMessage += ` | 太阳风延迟: ${solarWindDelay}分钟`;
-        
-        document.getElementById('data-source-status').textContent = statusMessage;
-
-        // 更新所有图表数据
-        solarWindChart.data.datasets[0].data = windData;
-        solarWindChart.update('none');
-        
-        densityChart.data.datasets[0].data = densityData;
-        densityChart.update('none');
-        
-        temperatureChart.data.datasets[0].data = temperatureData;
-        temperatureChart.update('none');
-        
-        bxChart.data.datasets[0].data = bxData;
-        bxChart.update('none');
-        
-        byChart.data.datasets[0].data = byData;
-        byChart.update('none');
-        
-        bzChart.data.datasets[0].data = bzData;
-        bzChart.update('none');
-        
-        btChart.data.datasets[0].data = btData;
-        btChart.update('none');
-
-        // 更新HPI图表 - 增强错误处理
-        if (hpiData.length > 0) {
-          try {
-            hpiNorthChart.data.datasets[0].data = hpiData.map(item => ({
-              x: utcToBeijingDate(item.dateTime),
-              y: item.north
-            }));
-            hpiNorthChart.update('none');
-            
-            hpiSouthChart.data.datasets[0].data = hpiData.map(item => ({
-              x: utcToBeijingDate(item.dateTime),
-              y: item.south
-            }));
-            hpiSouthChart.update('none');
-          } catch (chartError) {
-            console.warn('HPI图表更新失败:', chartError);
-          }
-        } else {
-          // 如果没有HPI数据，清空图表
-          hpiNorthChart.data.datasets[0].data = [];
-          hpiNorthChart.update('none');
-          hpiSouthChart.data.datasets[0].data = [];
-          hpiSouthChart.update('none');
-        }
-
-        // 保存数据用于到达时间计算
-        solarWindData = windData;
-        updateArrivalChart();
-
-        // 计算极光可见性
-        calculateAuroraVisibility();
-
-      } catch (error) {
-        console.error('数据加载失败:', error);
-        document.getElementById('error-message').textContent = 
-          `数据加载失败: ${error.message} (最后尝试: ${new Date().toLocaleTimeString()})`;
-        document.getElementById('alert-content').textContent = '使用最后有效数据';
-        document.getElementById('data-source-status').textContent = '数据源状态: 异常';
       }
-    }
+    });
   </script>
 </body>
 </html>
